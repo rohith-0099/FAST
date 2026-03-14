@@ -1,9 +1,35 @@
+# Dependencies
 node_modules/
-.env
-__pycache__/
-*.pyc
 venv/
 .next/
 dist/
 build/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment and Secrets
+.env*
+!.env.example
+
+# Databases
+*.db
+*.sqlite
+*.sql
+
+# IDEs and OS
+.vscode/
+.idea/
 .DS_Store
+*.swp
+*.swo
+Thumbs.db
+
+# Documentation and Temporary Files
+*.pptx
+*.pdf
+.vercel
+.turbo
+.aider*
