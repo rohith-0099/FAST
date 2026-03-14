@@ -84,12 +84,12 @@ export default function LocationSearch({
 
   const getIconColor = () => {
     if (existingLocation) return iconColor;
-    return "text-slate-500";
+    return "text-gray-400";
   };
 
   return (
     <div className="relative" ref={wrapperRef}>
-      <label className="block text-sm font-medium text-slate-300 mb-1">
+      <label className="block text-sm font-medium text-gray-700 mb-1.5">
         {label}
       </label>
       <div className="relative">
@@ -121,13 +121,13 @@ export default function LocationSearch({
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.trim().length >= 3 && setShowSuggestions(true)}
           placeholder={placeholder}
-          className="w-full bg-[#0f172a] border border-[#334155] rounded-lg pl-10 pr-10 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-green-500 transition-colors"
+          className="w-full bg-white border border-gray-300 rounded-lg pl-10 pr-10 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
         />
 
         {query && (
           <button
             onClick={handleClear}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -138,10 +138,10 @@ export default function LocationSearch({
 
       {/* Suggestions dropdown */}
       {showSuggestions && (suggestions.length > 0 || loading) && (
-        <div className="absolute z-50 w-full mt-1 bg-[#1e293b] border border-[#334155] rounded-lg shadow-xl max-h-64 overflow-y-auto">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
           {loading ? (
-            <div className="px-4 py-3 text-sm text-slate-400 flex items-center gap-2">
-              <span className="spinner spinner-sm"></span>
+            <div className="px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
+              <span className="spinner-sm"></span>
               Searching...
             </div>
           ) : (
@@ -149,9 +149,9 @@ export default function LocationSearch({
               <button
                 key={index}
                 onClick={() => handleSelect(suggestion)}
-                className="w-full px-4 py-3 text-left text-sm text-slate-200 hover:bg-[#334155] transition-colors border-b border-[#334155] last:border-b-0"
+                className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
               >
-                <div className="flex items-start gap-2">
+                <div className="flex items-start gap-3">
                   <svg
                     className={`w-4 h-4 mt-0.5 flex-shrink-0 ${iconColor}`}
                     fill="none"
@@ -172,9 +172,9 @@ export default function LocationSearch({
                     />
                   </svg>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium truncate">{suggestion.name}</p>
+                    <p className="font-medium text-gray-900 truncate">{suggestion.name}</p>
                     {suggestion.display_name !== suggestion.name && (
-                      <p className="text-xs text-slate-400 truncate mt-0.5">
+                      <p className="text-xs text-gray-500 truncate mt-0.5">
                         {suggestion.display_name}
                       </p>
                     )}
@@ -187,7 +187,7 @@ export default function LocationSearch({
       )}
 
       {showSuggestions && suggestions.length === 0 && query.trim().length >= 3 && !loading && (
-        <div className="absolute z-50 w-full mt-1 bg-[#1e293b] border border-[#334155] rounded-lg shadow-xl px-4 py-3 text-sm text-slate-400">
+        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg px-4 py-3 text-sm text-gray-500">
           No locations found. Try a different search term.
         </div>
       )}

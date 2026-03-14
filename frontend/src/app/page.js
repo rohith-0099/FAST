@@ -26,7 +26,6 @@ export default function Home() {
       setLoading(true);
       setRoutes(null);
       setWeather(null);
-      // Store for save-trip later
       vehicleRef.current = { type: vehicleType.toLowerCase(), mileage };
       try {
         const res = await axios.post(`${API_BASE}/api/routes`, {
@@ -84,26 +83,29 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#0f172a]">
+    <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="border-b border-[#334155] bg-[#0f172a]/80 backdrop-blur-md sticky top-0 z-50">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold text-lg">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-blue-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-emerald-500/25">
               F
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white tracking-tight">
+              <h1 className="text-xl font-bold text-gray-900">
                 FAST
               </h1>
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-gray-500">
                 Fuel Aware Smart Travel
               </p>
             </div>
           </div>
-          <p className="text-sm text-slate-400 hidden sm:block">
-            AI-Powered Fuel Estimation
-          </p>
+          <div className="hidden sm:flex items-center gap-2 text-sm text-gray-600">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            AI-Powered Route Planning
+          </div>
         </div>
       </header>
 
@@ -111,7 +113,7 @@ export default function Home() {
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
           {/* Left sidebar */}
-          <div className="w-full lg:w-[350px] flex-shrink-0 space-y-6">
+          <div className="w-full lg:w-[380px] flex-shrink-0 space-y-6">
             <RouteForm
               source={source}
               dest={destination}
@@ -132,29 +134,41 @@ export default function Home() {
 
           {/* Map area */}
           <div className="flex-1 min-w-0">
-            <div className="map-container">
-              <Map
-                source={source}
-                destination={destination}
-                routes={routes}
-                onSetSource={setSource}
-                onSetDestination={setDestination}
-              />
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+              <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                  </svg>
+                  <span className="text-sm font-medium text-gray-700">Route Map</span>
+                </div>
+                <span className="text-xs text-gray-500">Click on map or search to set points</span>
+              </div>
+              <div className="map-container">
+                <Map
+                  source={source}
+                  destination={destination}
+                  routes={routes}
+                  onSetSource={setSource}
+                  onSetDestination={setDestination}
+                />
+              </div>
             </div>
-            <div className="mt-2 flex items-center gap-6 text-xs text-slate-500 px-1">
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-0.5 bg-green-500 inline-block rounded"></span>
+            
+            {/* Legend */}
+            <div className="mt-3 flex items-center gap-6 text-xs text-gray-500">
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-1 bg-emerald-500 rounded-full"></span>
                 Fuel Efficient
               </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-0.5 bg-blue-500 inline-block rounded"></span>
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-1 bg-blue-500 rounded-full"></span>
                 Fastest
               </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-0.5 bg-gray-500 inline-block rounded"></span>
+              <span className="flex items-center gap-2">
+                <span className="w-4 h-1 bg-gray-400 rounded-full"></span>
                 Alternative
               </span>
-              <span className="ml-auto">Search or click map to set points</span>
             </div>
           </div>
         </div>

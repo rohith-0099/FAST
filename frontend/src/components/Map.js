@@ -16,29 +16,29 @@ import {
 const sourceIcon = new L.DivIcon({
   className: "",
   html: `<div style="
-    width: 28px; height: 28px;
-    background: #22c55e;
+    width: 20px; height: 20px;
+    background: #10b981;
     border: 3px solid white;
     border-radius: 50%;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   "></div>`,
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
-  popupAnchor: [0, -16],
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
+  popupAnchor: [0, -12],
 });
 
 const destIcon = new L.DivIcon({
   className: "",
   html: `<div style="
-    width: 28px; height: 28px;
+    width: 20px; height: 20px;
     background: #ef4444;
     border: 3px solid white;
     border-radius: 50%;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   "></div>`,
-  iconSize: [28, 28],
-  iconAnchor: [14, 14],
-  popupAnchor: [0, -16],
+  iconSize: [20, 20],
+  iconAnchor: [10, 10],
+  popupAnchor: [0, -12],
 });
 
 function MapClickHandler({ source, destination, onSetSource, onSetDestination }) {
@@ -91,9 +91,9 @@ function FitBounds({ routes, source, destination }) {
 }
 
 function getRouteColor(route) {
-  if (route.is_fuel_efficient) return "#22c55e";
+  if (route.is_fuel_efficient) return "#10b981";
   if (route.is_fastest) return "#3b82f6";
-  return "#6b7280";
+  return "#9ca3af";
 }
 
 function getRouteWeight(route) {
@@ -149,9 +149,17 @@ export default function MapComponent({
       {source && (
         <Marker position={[source.lat, source.lng]} icon={sourceIcon}>
           <Popup>
-            <strong>Source</strong>
-            <br />
-            {source.displayName || `${source.lat.toFixed(4)}, ${source.lng.toFixed(4)}`}
+            <div className="text-sm">
+              <strong className="text-emerald-600 block mb-1">Source</strong>
+              <div className="text-gray-600">
+                {source.lat.toFixed(4)}, {source.lng.toFixed(4)}
+              </div>
+              {source.displayName && (
+                <div className="text-gray-500 text-xs mt-1 truncate max-w-[200px]">
+                  {source.displayName}
+                </div>
+              )}
+            </div>
           </Popup>
         </Marker>
       )}
@@ -162,9 +170,17 @@ export default function MapComponent({
           icon={destIcon}
         >
           <Popup>
-            <strong>Destination</strong>
-            <br />
-            {destination.displayName || `${destination.lat.toFixed(4)}, ${destination.lng.toFixed(4)}`}
+            <div className="text-sm">
+              <strong className="text-red-600 block mb-1">Destination</strong>
+              <div className="text-gray-600">
+                {destination.lat.toFixed(4)}, {destination.lng.toFixed(4)}
+              </div>
+              {destination.displayName && (
+                <div className="text-gray-500 text-xs mt-1 truncate max-w-[200px]">
+                  {destination.displayName}
+                </div>
+              )}
+            </div>
           </Popup>
         </Marker>
       )}
@@ -184,14 +200,13 @@ export default function MapComponent({
               opacity={0.85}
             >
               <Popup>
-                <div>
-                  <strong>{route.summary || `Route ${idx + 1}`}</strong>
-                  <br />
-                  Distance: {route.distance_km?.toFixed(1)} km
-                  <br />
-                  Fuel: {route.fuel_litres?.toFixed(2)} L
-                  <br />
-                  Time: {formatTime(route.duration_min)}
+                <div className="text-sm">
+                  <strong className="text-gray-900 block mb-1">{route.summary || `Route ${idx + 1}`}</strong>
+                  <div className="space-y-0.5 text-gray-600">
+                    <div><span className="font-medium">Distance:</span> {route.distance_km?.toFixed(1)} km</div>
+                    <div><span className="font-medium">Fuel:</span> {route.fuel_litres?.toFixed(2)} L</div>
+                    <div><span className="font-medium">Time:</span> {formatTime(route.duration_min)}</div>
+                  </div>
                 </div>
               </Popup>
             </Polyline>

@@ -27,130 +27,110 @@ export default function TripHistory({ refreshKey }) {
   }, [refreshKey]);
 
   return (
-    <div className="card">
+    <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between text-left"
+        className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
       >
-        <h2 className="text-lg font-semibold text-white flex items-center gap-2">
-          <svg
-            className="w-5 h-5 text-blue-400"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          Trip History
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
+            <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <div className="text-left">
+            <h2 className="text-base font-semibold text-gray-900">Trip History</h2>
+            <p className="text-xs text-gray-500">View your past trips</p>
+          </div>
           {trips.length > 0 && (
-            <span className="text-xs bg-blue-500/20 text-blue-400 px-2 py-0.5 rounded-full">
-              {trips.length}
+            <span className="ml-2 text-xs font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
+              {trips.length} trips
             </span>
           )}
-        </h2>
+        </div>
         <svg
-          className={`w-5 h-5 text-slate-400 transition-transform ${
+          className={`w-5 h-5 text-gray-400 transition-transform ${
             expanded ? "rotate-180" : ""
           }`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
         >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M19 9l-7 7-7-7"
-          />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
 
       {expanded && (
-        <div className="mt-4">
+        <div className="px-5 pb-5">
           {loading ? (
-            <div className="text-center py-6">
+            <div className="text-center py-8">
               <span className="spinner"></span>
-              <p className="text-slate-500 text-sm mt-2">Loading history...</p>
+              <p className="text-gray-500 text-sm mt-3">Loading history...</p>
             </div>
           ) : trips.length === 0 ? (
-            <div className="text-center py-8">
-              <svg
-                className="w-12 h-12 text-slate-600 mx-auto mb-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                />
-              </svg>
-              <p className="text-slate-500 text-sm">No trips saved yet</p>
-              <p className="text-slate-600 text-xs mt-1">
+            <div className="text-center py-10">
+              <div className="w-14 h-14 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
+                <svg className="w-7 h-7 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              </div>
+              <p className="text-gray-600 font-medium">No trips saved yet</p>
+              <p className="text-gray-400 text-sm mt-1">
                 Find a route and save it to see it here
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto -mx-5">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-slate-500 text-xs uppercase tracking-wider border-b border-[#334155]">
-                    <th className="text-left py-2 px-3 font-medium">Date</th>
-                    <th className="text-left py-2 px-3 font-medium">
-                      From &rarr; To
-                    </th>
-                    <th className="text-left py-2 px-3 font-medium">Vehicle</th>
-                    <th className="text-right py-2 px-3 font-medium">
-                      Distance
-                    </th>
-                    <th className="text-right py-2 px-3 font-medium">
-                      Fuel (L)
-                    </th>
-                    <th className="text-right py-2 px-3 font-medium">
-                      Cost (&#x20B9;)
-                    </th>
+                  <tr className="text-gray-500 text-xs uppercase tracking-wider border-b border-gray-200 bg-gray-50">
+                    <th className="text-left py-3 px-5 font-medium">Date</th>
+                    <th className="text-left py-3 px-5 font-medium">Route</th>
+                    <th className="text-left py-3 px-5 font-medium">Vehicle</th>
+                    <th className="text-right py-3 px-5 font-medium">Distance</th>
+                    <th className="text-right py-3 px-5 font-medium">Fuel</th>
+                    <th className="text-right py-3 px-5 font-medium">Cost</th>
                   </tr>
                 </thead>
                 <tbody>
                   {trips.map((trip, idx) => (
                     <tr
                       key={trip.id || idx}
-                      className="border-b border-[#334155]/50 hover:bg-[#334155]/20 transition-colors"
+                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
                     >
-                      <td className="py-2.5 px-3 text-slate-400">
+                      <td className="py-3 px-5 text-gray-600">
                         {trip.created_at
-                          ? new Date(trip.created_at).toLocaleDateString()
+                          ? new Date(trip.created_at).toLocaleDateString('en-IN', {
+                              day: 'numeric',
+                              month: 'short',
+                              year: 'numeric'
+                            })
                           : "--"}
                       </td>
-                      <td className="py-2.5 px-3 text-white">
-                        <span className="text-xs">
-                          {trip.source_lat?.toFixed(2)},{" "}
-                          {trip.source_lng?.toFixed(2)}
-                        </span>
-                        <span className="text-slate-500 mx-1">&rarr;</span>
-                        <span className="text-xs">
-                          {trip.dest_lat?.toFixed(2)},{" "}
-                          {trip.dest_lng?.toFixed(2)}
-                        </span>
+                      <td className="py-3 px-5">
+                        <div className="flex items-center gap-2 text-xs">
+                          <span className="text-emerald-600 font-medium">
+                            {trip.source_lat?.toFixed(2)}, {trip.source_lng?.toFixed(2)}
+                          </span>
+                          <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                          </svg>
+                          <span className="text-red-600 font-medium">
+                            {trip.dest_lat?.toFixed(2)}, {trip.dest_lng?.toFixed(2)}
+                          </span>
+                        </div>
                       </td>
-                      <td className="py-2.5 px-3 text-slate-300 capitalize">
+                      <td className="py-3 px-5 text-gray-700 capitalize">
                         {trip.vehicle_type || "--"}
                       </td>
-                      <td className="py-2.5 px-3 text-right text-slate-300">
+                      <td className="py-3 px-5 text-right text-gray-700">
                         {trip.distance_km?.toFixed(1) || "--"} km
                       </td>
-                      <td className="py-2.5 px-3 text-right text-green-400 font-medium">
-                        {trip.fuel_litres?.toFixed(2) || "--"}
+                      <td className="py-3 px-5 text-right text-emerald-600 font-semibold">
+                        {trip.fuel_litres?.toFixed(2) || "--"} L
                       </td>
-                      <td className="py-2.5 px-3 text-right text-slate-300">
-                        {trip.fuel_litres
+                      <td className="py-3 px-5 text-right text-gray-900 font-semibold">
+                        ₹{trip.fuel_litres
                           ? (trip.fuel_litres * FUEL_PRICE).toFixed(0)
                           : "--"}
                       </td>
