@@ -15,7 +15,7 @@ htmlcov/
 !.env.example
 
 # Databases
-*.db
+# *.db
 *.sqlite
 
 # IDEs and OS
