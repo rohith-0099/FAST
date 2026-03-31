@@ -1,10 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
-
-const API_BASE = "http://localhost:8000";
-const FUEL_PRICE = 105;
+import { API_BASE } from "@/lib/api";
 
 export default function TripHistory({ refreshKey }) {
   const [trips, setTrips] = useState([]);
@@ -12,24 +10,25 @@ export default function TripHistory({ refreshKey }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const fetchHistory = async () => {
+    async function fetchHistory() {
       setLoading(true);
       try {
         const res = await axios.get(`${API_BASE}/api/history`);
-        setTrips(Array.isArray(res.data) ? res.data : res.data.trips || []);
+        setTrips(Array.isArray(res.data?.trips) ? res.data.trips : []);
       } catch (err) {
         console.error("Error fetching history:", err);
       } finally {
         setLoading(false);
       }
-    };
+    }
+
     fetchHistory();
   }, [refreshKey]);
 
   return (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
       <button
-        onClick={() => setExpanded(!expanded)}
+        onClick={() => setExpanded((prev) => (prev ? false : true))}
         className="w-full px-5 py-4 flex items-center justify-between hover:bg-gray-50 transition-colors"
       >
         <div className="flex items-center gap-3">
@@ -40,7 +39,7 @@ export default function TripHistory({ refreshKey }) {
           </div>
           <div className="text-left">
             <h2 className="text-base font-semibold text-gray-900">Trip History</h2>
-            <p className="text-xs text-gray-500">View your past trips</p>
+            <p className="text-xs text-gray-500">Saved trips with real vehicle records</p>
           </div>
           {trips.length > 0 && (
             <span className="ml-2 text-xs font-medium text-blue-600 bg-blue-100 px-2 py-0.5 rounded-full">
@@ -49,9 +48,7 @@ export default function TripHistory({ refreshKey }) {
           )}
         </div>
         <svg
-          className={`w-5 h-5 text-gray-400 transition-transform ${
-            expanded ? "rotate-180" : ""
-          }`}
+          className={`w-5 h-5 text-gray-400 transition-transform ${expanded ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -75,9 +72,7 @@ export default function TripHistory({ refreshKey }) {
                 </svg>
               </div>
               <p className="text-gray-600 font-medium">No trips saved yet</p>
-              <p className="text-gray-400 text-sm mt-1">
-                Find a route and save it to see it here
-              </p>
+              <p className="text-gray-400 text-sm mt-1">Find a route and save it to see it here</p>
             </div>
           ) : (
             <div className="overflow-x-auto -mx-5">
@@ -85,10 +80,11 @@ export default function TripHistory({ refreshKey }) {
                 <thead>
                   <tr className="text-gray-500 text-xs uppercase tracking-wider border-b border-gray-200 bg-gray-50">
                     <th className="text-left py-3 px-5 font-medium">Date</th>
-                    <th className="text-left py-3 px-5 font-medium">Route</th>
                     <th className="text-left py-3 px-5 font-medium">Vehicle</th>
+                    <th className="text-left py-3 px-5 font-medium">Route</th>
                     <th className="text-right py-3 px-5 font-medium">Distance</th>
                     <th className="text-right py-3 px-5 font-medium">Fuel</th>
+                    <th className="text-right py-3 px-5 font-medium">Price/L</th>
                     <th className="text-right py-3 px-5 font-medium">Cost</th>
                   </tr>
                 </thead>
@@ -96,43 +92,40 @@ export default function TripHistory({ refreshKey }) {
                   {trips.map((trip, idx) => (
                     <tr
                       key={trip.id || idx}
-                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                      className="border-b border-gray-100 hover:bg-gray-50 transition-colors align-top"
                     >
-                      <td className="py-3 px-5 text-gray-600">
+                      <td className="py-3 px-5 text-gray-600 whitespace-nowrap">
                         {trip.created_at
-                          ? new Date(trip.created_at).toLocaleDateString('en-IN', {
-                              day: 'numeric',
-                              month: 'short',
-                              year: 'numeric'
+                          ? new Date(trip.created_at).toLocaleDateString("en-IN", {
+                              day: "numeric",
+                              month: "short",
+                              year: "numeric",
                             })
                           : "--"}
                       </td>
-                      <td className="py-3 px-5">
-                        <div className="flex items-center gap-2 text-xs">
-                          <span className="text-emerald-600 font-medium">
-                            {trip.source_lat?.toFixed(2)}, {trip.source_lng?.toFixed(2)}
-                          </span>
-                          <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                          </svg>
-                          <span className="text-red-600 font-medium">
-                            {trip.dest_lat?.toFixed(2)}, {trip.dest_lng?.toFixed(2)}
-                          </span>
-                        </div>
+                      <td className="py-3 px-5 text-gray-700 min-w-[220px]">
+                        <p className="font-medium text-gray-900">{trip.vehicle_label || trip.vehicle_model || "--"}</p>
+                        <p className="text-xs text-gray-500 mt-1">{trip.fuel_type || trip.vehicle_type || ""}</p>
                       </td>
-                      <td className="py-3 px-5 text-gray-700 capitalize">
-                        {trip.vehicle_type || "--"}
+                      <td className="py-3 px-5 min-w-[220px] text-gray-600">
+                        <p className="font-medium text-gray-800">{trip.route_name || "Saved route"}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {trip.source_lat?.toFixed(2)}, {trip.source_lng?.toFixed(2)}
+                          {" → "}
+                          {trip.dest_lat?.toFixed(2)}, {trip.dest_lng?.toFixed(2)}
+                        </p>
                       </td>
-                      <td className="py-3 px-5 text-right text-gray-700">
+                      <td className="py-3 px-5 text-right text-gray-700 whitespace-nowrap">
                         {trip.distance_km?.toFixed(1) || "--"} km
                       </td>
-                      <td className="py-3 px-5 text-right text-emerald-600 font-semibold">
+                      <td className="py-3 px-5 text-right text-emerald-600 font-semibold whitespace-nowrap">
                         {trip.fuel_litres?.toFixed(2) || "--"} L
                       </td>
-                      <td className="py-3 px-5 text-right text-gray-900 font-semibold">
-                        ₹{trip.fuel_litres
-                          ? (trip.fuel_litres * FUEL_PRICE).toFixed(0)
-                          : "--"}
+                      <td className="py-3 px-5 text-right text-gray-700 whitespace-nowrap">
+                        {trip.fuel_price_per_litre?.toFixed(2) || "--"}
+                      </td>
+                      <td className="py-3 px-5 text-right text-gray-900 font-semibold whitespace-nowrap">
+                        {trip.estimated_cost?.toFixed(2) || "--"}
                       </td>
                     </tr>
                   ))}

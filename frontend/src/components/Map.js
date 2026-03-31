@@ -117,13 +117,13 @@ export default function MapComponent({
   onSetSource,
   onSetDestination,
 }) {
-  // Default center: India
+  // Default center: world view
   const center = useMemo(() => {
     if (source) return [source.lat, source.lng];
-    return [20.5937, 78.9629];
+    return [20, 0];
   }, [source]);
 
-  const zoom = source ? 13 : 5;
+  const zoom = source ? 13 : 2;
 
   return (
     <MapContainer

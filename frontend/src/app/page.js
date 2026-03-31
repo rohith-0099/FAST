@@ -1,48 +1,49 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useCallback, useState } from "react";
 import dynamic from "next/dynamic";
 import axios from "axios";
 import RouteForm from "@/components/RouteForm";
 import RouteResults from "@/components/RouteResults";
 import TripHistory from "@/components/TripHistory";
+import { API_BASE } from "@/lib/api";
 
 const Map = dynamic(() => import("@/components/Map"), { ssr: false });
-
-const API_BASE = "http://localhost:8000";
 
 export default function Home() {
   const [source, setSource] = useState(null);
   const [destination, setDestination] = useState(null);
   const [routes, setRoutes] = useState(null);
   const [weather, setWeather] = useState(null);
+  const [vehicle, setVehicle] = useState(null);
+  const [fuelPricePerLitre, setFuelPricePerLitre] = useState(null);
   const [loading, setLoading] = useState(false);
   const [refreshHistory, setRefreshHistory] = useState(0);
-  const vehicleRef = useRef({ type: "car", mileage: 15 });
 
   const handleFindRoutes = useCallback(
-    async (vehicleType, mileage) => {
+    async ({ vehicleId, fuelPricePerLitre: enteredFuelPrice }) => {
       if (!source || !destination) return;
       setLoading(true);
       setRoutes(null);
       setWeather(null);
-      vehicleRef.current = { type: vehicleType.toLowerCase(), mileage };
       try {
         const res = await axios.post(`${API_BASE}/api/routes`, {
           source_lat: source.lat,
           source_lng: source.lng,
           dest_lat: destination.lat,
           dest_lng: destination.lng,
-          vehicle_type: vehicleType.toLowerCase(),
-          mileage_kmpl: mileage,
+          vehicle_id: vehicleId,
+          fuel_price_per_litre: enteredFuelPrice,
         });
         setRoutes(res.data.routes);
         setWeather(res.data.weather);
+        setVehicle(res.data.vehicle || null);
+        setFuelPricePerLitre(res.data.fuel_price_per_litre ?? enteredFuelPrice);
       } catch (err) {
         console.error("Error fetching routes:", err);
         alert(
           err.response?.data?.detail ||
-            "Failed to fetch routes. Make sure the backend is running."
+            "Failed to fetch routes. Make sure the backend is running and the vehicle catalog is loaded."
         );
       } finally {
         setLoading(false);
@@ -53,17 +54,33 @@ export default function Home() {
 
   const handleSaveTrip = useCallback(
     async (route) => {
+      if (!source || !destination || !vehicle) return;
+
       try {
         await axios.post(`${API_BASE}/api/save-trip`, {
+          source_name: source.displayName || "",
+          dest_name: destination.displayName || "",
           source_lat: source.lat,
           source_lng: source.lng,
           dest_lat: destination.lat,
           dest_lng: destination.lng,
-          vehicle_type: vehicleRef.current.type,
-          mileage: vehicleRef.current.mileage,
+          vehicle_type: vehicle.vehicle_class || vehicle.fuel_type || "",
+          mileage: vehicle.combined_kmpl,
           distance_km: route.distance_km,
           fuel_litres: route.fuel_litres,
           route_name: route.summary || "",
+          vehicle_id: vehicle.id,
+          vehicle_label: vehicle.label,
+          vehicle_year: vehicle.year,
+          vehicle_make: vehicle.make,
+          vehicle_model: vehicle.model,
+          fuel_type: vehicle.fuel_type,
+          city_kmpl: vehicle.city_kmpl,
+          highway_kmpl: vehicle.highway_kmpl,
+          combined_kmpl: vehicle.combined_kmpl,
+          fuel_price_per_litre: fuelPricePerLitre,
+          estimated_cost: route.fuel_cost,
+          estimation_method: route.estimation_method,
         });
         setRefreshHistory((prev) => prev + 1);
         alert("Trip saved successfully!");
@@ -72,7 +89,7 @@ export default function Home() {
         alert("Failed to save trip.");
       }
     },
-    [source, destination]
+    [destination, fuelPricePerLitre, source, vehicle]
   );
 
   const handleClear = useCallback(() => {
@@ -80,11 +97,12 @@ export default function Home() {
     setDestination(null);
     setRoutes(null);
     setWeather(null);
+    setVehicle(null);
+    setFuelPricePerLitre(null);
   }, []);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -92,28 +110,22 @@ export default function Home() {
               F
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">
-                FAST
-              </h1>
-              <p className="text-xs text-gray-500">
-                Fuel Aware Smart Travel
-              </p>
+              <h1 className="text-xl font-bold text-gray-900">FAST</h1>
+              <p className="text-xs text-gray-500">Fuel Aware Smart Travel</p>
             </div>
           </div>
           <div className="hidden sm:flex items-center gap-2 text-sm text-gray-600">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            AI-Powered Route Planning
+            Real Vehicle Data + Route-Aware Fuel Estimates
           </div>
         </div>
       </header>
 
-      {/* Main content */}
       <main className="max-w-7xl mx-auto px-4 py-6">
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Left sidebar */}
-          <div className="w-full lg:w-[380px] flex-shrink-0 space-y-6">
+          <div className="w-full lg:w-[420px] flex-shrink-0 space-y-6">
             <RouteForm
               source={source}
               dest={destination}
@@ -127,12 +139,13 @@ export default function Home() {
               <RouteResults
                 routes={routes}
                 weather={weather}
+                vehicle={vehicle}
+                fuelPricePerLitre={fuelPricePerLitre}
                 onSaveTrip={handleSaveTrip}
               />
             )}
           </div>
 
-          {/* Map area */}
           <div className="flex-1 min-w-0">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
@@ -154,12 +167,11 @@ export default function Home() {
                 />
               </div>
             </div>
-            
-            {/* Legend */}
-            <div className="mt-3 flex items-center gap-6 text-xs text-gray-500">
+
+            <div className="mt-3 flex flex-wrap items-center gap-6 text-xs text-gray-500">
               <span className="flex items-center gap-2">
                 <span className="w-4 h-1 bg-emerald-500 rounded-full"></span>
-                Fuel Efficient
+                Lowest Estimated Fuel Use
               </span>
               <span className="flex items-center gap-2">
                 <span className="w-4 h-1 bg-blue-500 rounded-full"></span>
@@ -173,7 +185,6 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Trip History */}
         <div className="mt-8">
           <TripHistory refreshKey={refreshHistory} />
         </div>

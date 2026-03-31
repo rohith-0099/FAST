@@ -2,7 +2,3 @@ fastapi
 uvicorn[standard]
 httpx
 pydantic
-scikit-learn
-pandas
-numpy
-joblib

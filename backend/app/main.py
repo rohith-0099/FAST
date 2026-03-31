@@ -1,42 +1,57 @@
-"""
-FAST (Fuel-Aware Smart Travel) — FastAPI backend.
+"""FAST backend with real vehicle data and transparent fuel estimation."""
 
-Provides route planning with ML-based fuel consumption prediction.
-"""
+from __future__ import annotations
 
 from contextlib import asynccontextmanager
 from typing import Optional
 
 import httpx
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
-from database import init_db, save_trip, get_trips
-from ml.model import predict_fuel
+from database import get_trips, init_db, save_trip
+from fuel_estimator import estimate_route_fuel
+from vehicle_catalog import (
+    catalog_summary,
+    get_vehicle,
+    list_makes,
+    list_models,
+    list_vehicle_options,
+    list_years,
+)
 
-# ------------------------------------------------------------------
-# Constants
-# ------------------------------------------------------------------
-FUEL_PRICE_INR_PER_LITRE = 105.0
-OSRM_BASE = "https://router.project-osrm.org/route/v1/driving"
 OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast"
+OSRM_BASE = "https://router.project-osrm.org/route/v1/driving"
+DEFAULT_FUEL_PRICE_PER_LITRE = 105.0
+HIGHWAY_KEYWORDS = {
+    "highway",
+    "expressway",
+    "motorway",
+    "nh",
+    "national highway",
+    "freeway",
+    "interstate",
+}
+URBAN_KEYWORDS = {
+    "street",
+    "road",
+    "avenue",
+    "lane",
+    "boulevard",
+    "circle",
+    "marg",
+    "nagar",
+}
 
-# Keywords that signal highway-class roads
-HIGHWAY_KEYWORDS = {"highway", "expressway", "motorway", "nh", "national highway", "freeway", "interstate"}
-URBAN_KEYWORDS = {"street", "road", "avenue", "lane", "boulevard", "circle", "marg", "nagar"}
 
-
-# ------------------------------------------------------------------
-# Pydantic models
-# ------------------------------------------------------------------
 class RouteRequest(BaseModel):
     source_lat: float
     source_lng: float
     dest_lat: float
     dest_lng: float
-    vehicle_type: str = "car"
-    mileage_kmpl: float = 15.0
+    vehicle_id: int
+    fuel_price_per_litre: float = Field(default=DEFAULT_FUEL_PRICE_PER_LITRE, gt=0)
 
 
 class TripSave(BaseModel):
@@ -46,23 +61,33 @@ class TripSave(BaseModel):
     source_lng: float
     dest_lat: float
     dest_lng: float
-    vehicle_type: str = "car"
-    mileage: float = 15.0
+    vehicle_type: str = ""
+    mileage: float = 0.0
     distance_km: float = 0.0
     fuel_litres: float = 0.0
     route_name: Optional[str] = ""
+    vehicle_id: Optional[int] = None
+    vehicle_label: Optional[str] = ""
+    vehicle_year: Optional[int] = None
+    vehicle_make: Optional[str] = ""
+    vehicle_model: Optional[str] = ""
+    fuel_type: Optional[str] = ""
+    city_kmpl: Optional[float] = None
+    highway_kmpl: Optional[float] = None
+    combined_kmpl: Optional[float] = None
+    fuel_price_per_litre: Optional[float] = None
+    estimated_cost: Optional[float] = None
+    estimation_method: Optional[str] = ""
 
 
-# ------------------------------------------------------------------
-# App lifespan
-# ------------------------------------------------------------------
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    catalog_summary()
     yield
 
 
-app = FastAPI(title="FAST API", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="FAST API", version="2.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -73,15 +98,8 @@ app.add_middleware(
 )
 
 
-# ------------------------------------------------------------------
-# Helpers
-# ------------------------------------------------------------------
-def _classify_road_type(steps: list[dict]) -> str:
-    """
-    Analyse OSRM route steps to determine road type.
 
-    Returns one of: highway, urban, mixed.
-    """
+def _road_profile(steps: list[dict]) -> dict[str, float | str]:
     highway_count = 0
     urban_count = 0
     total = 0
@@ -92,39 +110,47 @@ def _classify_road_type(steps: list[dict]) -> str:
         combined = f"{name} {ref}"
         total += 1
 
-        if any(kw in combined for kw in HIGHWAY_KEYWORDS):
+        if any(keyword in combined for keyword in HIGHWAY_KEYWORDS):
             highway_count += 1
-        elif any(kw in combined for kw in URBAN_KEYWORDS):
+        elif any(keyword in combined for keyword in URBAN_KEYWORDS):
             urban_count += 1
 
     if total == 0:
-        return "mixed"
+        return {
+            "road_type": "mixed",
+            "highway_share": 0.0,
+            "urban_share": 0.0,
+            "unclassified_share": 1.0,
+        }
 
-    highway_ratio = highway_count / total
-    urban_ratio = urban_count / total
+    highway_share = round(highway_count / total, 3)
+    urban_share = round(urban_count / total, 3)
+    unclassified_share = round(max(0.0, 1.0 - highway_share - urban_share), 3)
 
-    if highway_ratio >= 0.5:
-        return "highway"
-    if urban_ratio >= 0.5:
-        return "urban"
-    return "mixed"
+    if highway_share >= 0.5:
+        road_type = "highway"
+    elif urban_share >= 0.5:
+        road_type = "urban"
+    else:
+        road_type = "mixed"
+
+    return {
+        "road_type": road_type,
+        "highway_share": highway_share,
+        "urban_share": urban_share,
+        "unclassified_share": unclassified_share,
+    }
+
 
 
 def _estimate_stops_per_km(steps: list[dict], distance_km: float) -> float:
-    """
-    Estimate the number of stops per km from OSRM steps.
-
-    Each step roughly corresponds to a manoeuvre/turn/intersection.
-    """
     if distance_km <= 0:
         return 0.0
-    # Each step is a manoeuvre; subtract 2 for depart + arrive
     num_manoeuvres = max(len(steps) - 2, 0)
     return round(num_manoeuvres / distance_km, 4)
 
 
 async def _fetch_routes(client: httpx.AsyncClient, req: RouteRequest) -> dict:
-    """Call the OSRM public routing API."""
     url = (
         f"{OSRM_BASE}/{req.source_lng},{req.source_lat}"
         f";{req.dest_lng},{req.dest_lat}"
@@ -146,7 +172,6 @@ async def _fetch_routes(client: httpx.AsyncClient, req: RouteRequest) -> dict:
 
 
 async def _fetch_weather(client: httpx.AsyncClient, lat: float, lng: float) -> dict:
-    """Fetch current weather from Open-Meteo."""
     url = (
         f"{OPEN_METEO_BASE}?latitude={lat}&longitude={lng}"
         f"&current=temperature_2m,wind_speed_10m,precipitation"
@@ -162,16 +187,39 @@ async def _fetch_weather(client: httpx.AsyncClient, lat: float, lng: float) -> d
             }
     except Exception:
         pass
-    # Fallback defaults if weather API is unreachable
     return {"temperature_c": 25.0, "wind_speed_kmh": 10.0, "precipitation_mm": 0.0}
 
 
-# ------------------------------------------------------------------
-# Endpoints
-# ------------------------------------------------------------------
+@app.get("/api/vehicles/years")
+async def vehicle_years():
+    return {"years": list_years()}
+
+
+@app.get("/api/vehicles/makes")
+async def vehicle_makes(year: int = Query(..., ge=1984)):
+    return {"makes": list_makes(year)}
+
+
+@app.get("/api/vehicles/models")
+async def vehicle_models(year: int = Query(..., ge=1984), make: str = Query(...)):
+    return {"models": list_models(year, make)}
+
+
+@app.get("/api/vehicles/options")
+async def vehicle_options(
+    year: int = Query(..., ge=1984),
+    make: str = Query(...),
+    model: str = Query(...),
+):
+    return {"vehicles": list_vehicle_options(year, make, model)}
+
+
 @app.post("/api/routes")
 async def get_routes(req: RouteRequest):
-    """Plan routes and predict fuel consumption for each alternative."""
+    vehicle = get_vehicle(req.vehicle_id)
+    if vehicle is None:
+        raise HTTPException(status_code=404, detail="Selected vehicle was not found in the official dataset")
+
     async with httpx.AsyncClient() as client:
         osrm_data = await _fetch_routes(client, req)
         weather = await _fetch_weather(client, req.source_lat, req.source_lng)
@@ -183,39 +231,28 @@ async def get_routes(req: RouteRequest):
         duration_s = route.get("duration", 0)
         distance_km = round(distance_m / 1000.0, 2)
         duration_min = round(duration_s / 60.0, 2)
-
         avg_speed_kmh = round(distance_km / (duration_min / 60.0), 2) if duration_min > 0 else 30.0
-
         geometry = route.get("geometry", {})
 
-        # Collect all steps from all legs
         all_steps = []
         for leg in route.get("legs", []):
             all_steps.extend(leg.get("steps", []))
 
         summary = route.get("legs", [{}])[0].get("summary", "") if route.get("legs") else ""
-
-        road_type = _classify_road_type(all_steps)
+        road_profile = _road_profile(all_steps)
         stops_per_km = _estimate_stops_per_km(all_steps, distance_km)
 
-        # ML prediction
-        try:
-            fuel_litres = predict_fuel(
-                distance_km=distance_km,
-                avg_speed_kmh=avg_speed_kmh,
-                vehicle_type=req.vehicle_type,
-                vehicle_mileage_kmpl=req.mileage_kmpl,
-                temperature_c=weather["temperature_c"],
-                wind_speed_kmh=weather["wind_speed_kmh"],
-                precipitation_mm=weather["precipitation_mm"],
-                road_type=road_type,
-                num_stops_per_km=stops_per_km,
-            )
-        except Exception as e:
-            # Fallback: simple distance / mileage estimate
-            fuel_litres = round(distance_km / req.mileage_kmpl, 3)
-
-        fuel_cost = round(fuel_litres * FUEL_PRICE_INR_PER_LITRE, 2)
+        estimate = estimate_route_fuel(
+            vehicle=vehicle,
+            distance_km=distance_km,
+            avg_speed_kmh=avg_speed_kmh,
+            temperature_c=weather["temperature_c"],
+            wind_speed_kmh=weather["wind_speed_kmh"],
+            precipitation_mm=weather["precipitation_mm"],
+            stops_per_km=stops_per_km,
+            road_profile=road_profile,
+            fuel_price_per_litre=req.fuel_price_per_litre,
+        )
 
         routes_out.append(
             {
@@ -223,9 +260,16 @@ async def get_routes(req: RouteRequest):
                 "distance_km": distance_km,
                 "duration_min": duration_min,
                 "avg_speed_kmh": avg_speed_kmh,
-                "fuel_litres": fuel_litres,
-                "fuel_cost_inr": fuel_cost,
-                "road_type": road_type,
+                "fuel_litres": estimate["fuel_litres"],
+                "fuel_cost": estimate["fuel_cost"],
+                "road_type": road_profile["road_type"],
+                "urban_share": road_profile["urban_share"],
+                "highway_share": road_profile["highway_share"],
+                "stops_per_km": stops_per_km,
+                "effective_kmpl": estimate["effective_kmpl"],
+                "effective_l_per_100km": estimate["effective_l_per_100km"],
+                "adjustment_factor": estimate["adjustment_factor"],
+                "estimation_method": estimate["estimation_method"],
                 "geometry": geometry,
                 "summary": summary,
                 "is_fuel_efficient": False,
@@ -233,7 +277,6 @@ async def get_routes(req: RouteRequest):
             }
         )
 
-    # Mark best routes
     if routes_out:
         fuel_efficient_idx = min(range(len(routes_out)), key=lambda i: routes_out[i]["fuel_litres"])
         fastest_idx = min(range(len(routes_out)), key=lambda i: routes_out[i]["duration_min"])
@@ -243,26 +286,28 @@ async def get_routes(req: RouteRequest):
     return {
         "routes": routes_out,
         "weather": weather,
-        "vehicle_type": req.vehicle_type,
-        "mileage_kmpl": req.mileage_kmpl,
+        "vehicle": vehicle,
+        "fuel_price_per_litre": req.fuel_price_per_litre,
+        "pricing_note": "Fuel price is user-provided so it can match the latest local market price.",
     }
 
 
 @app.post("/api/save-trip")
 async def save_trip_endpoint(trip: TripSave):
-    """Persist a trip to the database."""
     trip_id = save_trip(trip.model_dump())
     return {"id": trip_id, "message": "Trip saved successfully"}
 
 
 @app.get("/api/history")
 async def trip_history():
-    """Return the 20 most recent trips."""
     trips = get_trips(limit=20)
     return {"trips": trips}
 
 
 @app.get("/api/health")
 async def health():
-    """Simple health check."""
-    return {"status": "ok"}
+    return {
+        "status": "ok",
+        "catalog": catalog_summary(),
+        "estimation": "official vehicle dataset + transparent route adjustments",
+    }

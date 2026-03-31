@@ -50,7 +50,7 @@ export default function LocationSearch({
       const response = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
           searchQuery
-        )}&limit=5&addressdetails=1&countrycodes=in`
+        )}&limit=5&addressdetails=1`
       );
       const data = await response.json();
       setSuggestions(data);
