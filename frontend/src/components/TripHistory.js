@@ -106,6 +106,11 @@ export default function TripHistory({ refreshKey }) {
                       <td className="py-3 px-5 text-gray-700 min-w-[220px]">
                         <p className="font-medium text-gray-900">{trip.vehicle_label || trip.vehicle_model || "--"}</p>
                         <p className="text-xs text-gray-500 mt-1">{trip.fuel_type || trip.vehicle_type || ""}</p>
+                        {trip.vehicle_data_source && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            {trip.vehicle_data_source === "manual_profile" ? "Manual profile" : "Official catalog"}
+                          </p>
+                        )}
                       </td>
                       <td className="py-3 px-5 min-w-[220px] text-gray-600">
                         <p className="font-medium text-gray-800">{trip.route_name || "Saved route"}</p>

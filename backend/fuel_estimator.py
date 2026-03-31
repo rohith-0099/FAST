@@ -1,10 +1,8 @@
-"""Transparent route fuel estimator based on official vehicle economy data."""
+"""Transparent route fuel estimator based on real vehicle efficiency data."""
 
 from __future__ import annotations
 
 from typing import Any
-
-US_MPG_TO_L_PER_100KM = 235.214583
 
 
 def _clamp(value: float, lower: float, upper: float) -> float:
@@ -12,8 +10,8 @@ def _clamp(value: float, lower: float, upper: float) -> float:
 
 
 
-def _mpg_to_l_per_100km(mpg: float) -> float:
-    return US_MPG_TO_L_PER_100KM / mpg
+def _kmpl_to_l_per_100km(kmpl: float) -> float:
+    return 100.0 / kmpl
 
 
 
@@ -22,9 +20,9 @@ def _blend_base_consumption(vehicle: dict[str, Any], road_profile: dict[str, flo
     highway_share = _clamp(float(road_profile.get("highway_share", 0.0)), 0.0, 1.0)
     neutral_share = max(0.0, 1.0 - city_share - highway_share)
 
-    city_l100 = _mpg_to_l_per_100km(float(vehicle["city_mpg"]))
-    highway_l100 = _mpg_to_l_per_100km(float(vehicle["highway_mpg"]))
-    combined_l100 = _mpg_to_l_per_100km(float(vehicle["combined_mpg"]))
+    city_l100 = _kmpl_to_l_per_100km(float(vehicle["city_kmpl"]))
+    highway_l100 = _kmpl_to_l_per_100km(float(vehicle["highway_kmpl"]))
+    combined_l100 = _kmpl_to_l_per_100km(float(vehicle["combined_kmpl"]))
 
     if city_share == 0.0 and highway_share == 0.0:
         return combined_l100
@@ -77,9 +75,9 @@ def estimate_route_fuel(
     vehicle: dict[str, Any],
     distance_km: float,
     avg_speed_kmh: float,
-    temperature_c: float,
-    wind_speed_kmh: float,
-    precipitation_mm: float,
+    temperature_c: float | None,
+    wind_speed_kmh: float | None,
+    precipitation_mm: float | None,
     stops_per_km: float,
     road_profile: dict[str, float],
     fuel_price_per_litre: float,
@@ -87,9 +85,9 @@ def estimate_route_fuel(
     base_l_per_100km = _blend_base_consumption(vehicle, road_profile)
 
     factors = {
-        "temperature": _temperature_factor(temperature_c),
-        "wind": _wind_factor(wind_speed_kmh),
-        "rain": _rain_factor(precipitation_mm),
+        "temperature": _temperature_factor(temperature_c) if temperature_c is not None else 1.0,
+        "wind": _wind_factor(wind_speed_kmh) if wind_speed_kmh is not None else 1.0,
+        "rain": _rain_factor(precipitation_mm) if precipitation_mm is not None else 1.0,
         "speed": _speed_factor(avg_speed_kmh),
         "stops": _stop_factor(stops_per_km),
     }
@@ -110,5 +108,7 @@ def estimate_route_fuel(
         "effective_l_per_100km": round(effective_l_per_100km, 2),
         "effective_kmpl": effective_kmpl,
         "adjustment_factor": round(adjustment_factor, 3),
-        "estimation_method": "Official vehicle fuel-economy data with route and weather adjustments",
+        "estimation_method": (
+            "Real vehicle efficiency data with route adjustments and live weather adjustments when available"
+        ),
     }

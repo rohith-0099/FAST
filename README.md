@@ -38,7 +38,7 @@ curl "http://127.0.0.1:5000/route/v1/driving/76.9553,8.5241;76.9366,8.5010?steps
 ```
 
 ### 3. Backend (FastAPI)
-1. Open a terminal and navigate to `fast-backend`.
+1. Open a terminal and navigate to `backend`.
 2. Create and activate a Python virtual environment:
    ```bash
    python -m venv venv
@@ -49,7 +49,7 @@ curl "http://127.0.0.1:5000/route/v1/driving/76.9553,8.5241;76.9366,8.5010?steps
    ```bash
    pip install -r requirements.txt
    ```
-4. Create a `.env` file in the `fast-backend` folder:
+4. Create a `.env` file in the `backend` folder:
    ```env
    SUPABASE_URL=your_supabase_project_url
    SUPABASE_KEY=your_supabase_anon_key
@@ -62,12 +62,12 @@ curl "http://127.0.0.1:5000/route/v1/driving/76.9553,8.5241;76.9366,8.5010?steps
    The API will be available at `http://localhost:8000/api/plan-trip` and docs at `http://localhost:8000/docs`.
 
 ### 4. Frontend (Next.js)
-1. Open a terminal and navigate to `fast-frontend`.
+1. Open a terminal and navigate to `frontend`.
 2. Install frontend dependencies (if not already done via create-next-app):
    ```bash
    npm install
    ```
-3. Create a `.env.local` file in `fast-frontend` if you want to configure the API URL explicitly (default assumes backend is at `http://localhost:8000`):
+3. Create a `.env.local` file in `frontend` if you want to configure the API URL explicitly (default assumes backend is at `http://localhost:8000`):
    ```env
    NEXT_PUBLIC_API_URL=http://localhost:8000
    ```

@@ -21,7 +21,7 @@ export default function Home() {
   const [refreshHistory, setRefreshHistory] = useState(0);
 
   const handleFindRoutes = useCallback(
-    async ({ vehicleId, fuelPricePerLitre: enteredFuelPrice }) => {
+    async ({ vehicleSource, vehicleId, fuelPricePerLitre: enteredFuelPrice, manualVehicle }) => {
       if (!source || !destination) return;
       setLoading(true);
       setRoutes(null);
@@ -32,7 +32,9 @@ export default function Home() {
           source_lng: source.lng,
           dest_lat: destination.lat,
           dest_lng: destination.lng,
+          vehicle_source: vehicleSource,
           vehicle_id: vehicleId,
+          manual_vehicle: manualVehicle,
           fuel_price_per_litre: enteredFuelPrice,
         });
         setRoutes(res.data.routes);
@@ -81,6 +83,8 @@ export default function Home() {
           fuel_price_per_litre: fuelPricePerLitre,
           estimated_cost: route.fuel_cost,
           estimation_method: route.estimation_method,
+          vehicle_data_source: vehicle.data_source || "",
+          source_note: vehicle.data_source_note || "",
         });
         setRefreshHistory((prev) => prev + 1);
         alert("Trip saved successfully!");

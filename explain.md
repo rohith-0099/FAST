@@ -1,820 +1,1120 @@
 # FAST Project Explanation
 
-## 1. Project Overview
+## 1. Project Name
 
 **FAST** stands for **Fuel Aware Smart Travel**.
 
-This project is a full-stack web application that helps a user choose a better driving route by comparing:
+It is a route-planning web application that helps a user compare route options not only by:
 
 - distance
-- travel time
-- expected fuel consumption
-- estimated fuel cost
-- route type
+- time
 
-Instead of showing only the shortest or fastest path, FAST tries to answer a more practical question:
+but also by:
 
-**"Which route will save more fuel for my vehicle under current road and weather conditions?"**
+- estimated fuel consumption
+- estimated trip cost
+- vehicle-specific efficiency
+- road profile
+- current route-area weather when available
 
-The application combines:
+The main goal of the project is to help a user choose a route that is more practical in the real world, not just shorter on a map.
 
-- a **Next.js frontend**
-- a **FastAPI backend**
-- a **machine learning model** for fuel prediction
-- a **local SQLite database** for trip history
-- multiple **open map and weather services**
+---
 
-## 2. Main Use Case
+## 2. What Problem This Project Solves
 
-The main use case of this project is:
+Most map apps answer questions like:
 
-> A user enters a source and destination, selects a vehicle type and mileage, and the system returns route alternatives with fuel estimates so the user can choose the most fuel-efficient trip.
+- Which route is shortest?
+- Which route is fastest?
 
-This is useful for:
+FAST tries to answer a more useful question:
 
-- daily commuters who want to reduce fuel expenses
-- delivery or logistics planning
-- personal travel planning
-- comparing route options beyond only speed
-- educational/demo purposes for intelligent transportation systems
+- Which route is likely to consume less fuel for this specific vehicle?
+- What will that trip roughly cost at today's fuel price?
 
-## 3. What Problem the Project Solves
+This matters for:
 
-Most map applications optimize mainly for:
+- daily commuters
+- bike and scooter riders
+- car owners
+- truck drivers
+- bus or fleet operators
+- delivery and logistics users
+- users in India who care about real mileage and changing fuel prices
 
-- shortest route
-- fastest route
-- live traffic convenience
+---
 
-FAST adds another layer:
+## 3. Is The Current Project Logical?
 
-- **fuel awareness**
+**Yes, the current product is logically structured.**
 
-Fuel usage is not decided only by distance. It also depends on:
+The current design is much more logical than the older synthetic-demo version because it now follows this idea:
+
+1. Start from a real vehicle efficiency value.
+2. Get real route alternatives from a routing engine.
+3. Estimate whether a route behaves more like city driving, highway driving, or mixed driving.
+4. Adjust the base fuel use using route conditions and live weather when available.
+5. Multiply the final fuel use by the fuel price entered by the user.
+
+That is a sensible real-world approach.
+
+### Why it is logical now
+
+- vehicle efficiency comes from either a real official dataset or a real manual vehicle profile
+- fuel price is entered by the user instead of being fetched from a fake or stale hardcoded source
+- route comparison is done separately for each returned route
+- the app clearly separates **lowest fuel use** from **fastest route**
+- weather is used only when live weather is available
+- if live weather is unavailable, the app does **not** invent weather values
+
+### Important honesty note
+
+The project is **logical and explainable**, but it is still an **estimation product**, not direct vehicle telemetry.
+
+That means:
+
+- it is more trustworthy than fake demo logic
+- but it is still not the same as reading actual live fuel consumption from the vehicle ECU or OBD device
+
+So the correct statement is:
+
+- **logical and practical**: yes
+- **fully exact for every trip**: no
+
+That is the honest engineering answer.
+
+---
+
+## 4. Current Product Philosophy
+
+The project now follows these trust rules:
+
+- no synthetic runtime dataset is used for route calculation
+- no hardcoded mileage defaults are used for manual vehicles
+- no fake live fuel price is injected into calculations
+- no fake live weather is injected if weather API data is unavailable
+- official structured data is used where it exists
+- manual real data entry is used where structured data does not exist in a good free form
+
+This is important because the product is intended to be useful in India, where many real users need:
+
+- bikes
+- scooters
+- mopeds
+- cars
+- vans
+- trucks
+- buses
+- auto rickshaws
+
+There is not one single clean, free, structured, official India-wide catalog that covers all of those vehicle types in a form this app can automatically use.
+
+So the product uses two honest data paths.
+
+---
+
+## 5. Two Vehicle Data Paths
+
+### A. Official Catalog Path
+
+This path uses a real free vehicle dataset stored locally at:
+
+- `backend/data/vehicles.csv.zip`
+
+This catalog is loaded by:
+
+- `backend/vehicle_catalog.py`
+
+The current dataset source is:
+
+- FuelEconomy.gov free vehicle dataset
+
+This path is strong for structured vehicle records such as many cars and light vehicles.
+
+### B. Manual Real Vehicle Path
+
+This path exists for vehicles that users actually use in India but that are not cleanly covered by one structured free catalog in this project.
+
+Examples:
+
+- bike
+- scooter
+- moped
+- truck
+- bus
+- auto rickshaw
+- custom commercial vehicle
+
+In this path, the user enters the real vehicle details needed for calculation.
+
+This is more honest than pretending the app knows the mileage automatically when it does not.
+
+---
+
+## 6. What The User Is Asked In The Current Product
+
+### Common inputs
+
+For every route calculation, the app needs:
+
+- source location
+- destination location
+- vehicle data
+- fuel price today
+
+### Manual real vehicle mode
+
+The manual flow now asks only the most relevant questions for calculation.
+
+#### Required questions
 
 - vehicle type
-- vehicle mileage
-- average speed
-- stop frequency
-- road type
-- weather conditions such as wind, temperature, and rain
+- vehicle name or model
+- fuel type
+- combined mileage in km/l
+- fuel price today per litre
 
-This project tries to model those factors and recommend the route that is likely to consume less fuel.
+#### Optional advanced questions
 
-## 4. Core Technical Idea
+- city mileage in km/l
+- highway mileage in km/l
 
-The technical idea behind FAST is:
+If city and highway mileage are not provided, the app uses the combined mileage value as the fallback for both.
 
-1. Get multiple route alternatives from a routing engine.
-2. Extract route features such as distance, speed, and stop density.
-3. Add environmental context using weather data.
-4. Feed those values into an ML model that predicts fuel consumption.
-5. Mark the most fuel-efficient route and show the estimated cost.
-6. Save selected trips into a database for later history viewing.
+### Official catalog mode
 
-So the app is not just displaying route data. It is doing **route intelligence plus fuel prediction**.
+The official catalog flow asks for:
 
-## 5. Current End-to-End User Flow
+- year
+- make
+- model
+- vehicle variant
+- fuel price today per litre
 
-### Step 1: User selects locations
+The selected catalog vehicle already contains:
 
-The user can choose source and destination in two ways:
+- city efficiency
+- highway efficiency
+- combined efficiency
+- fuel type
+- class and drivetrain metadata
 
-- search using the autocomplete box
-- click directly on the map
+---
 
-Location search uses **Nominatim** from OpenStreetMap.
+## 7. Supported Manual Vehicle Types
 
-Important current behavior:
-
-- searches are limited to `countrycodes=in`, so the search is effectively focused on **India**
-- the default map center is also India
-
-### Step 2: User selects vehicle information
-
-The user chooses:
+The current manual vehicle type list in the frontend includes:
 
 - Bike
+- Scooter
+- Moped
 - Car
-- SUV
+- Van
 - Truck
+- Bus
+- Auto Rickshaw
+- Custom
 
-The form automatically fills a default mileage:
+### Current manual fuel-type support
 
-- Bike: 40 km/l
-- Car: 15 km/l
-- SUV: 10 km/l
-- Truck: 5 km/l
+The current manual vehicle flow supports litre-based fuels only:
 
-The user can override the mileage manually.
+- Petrol
+- Diesel
 
-### Step 3: Frontend sends request to backend
+This is because the current cost calculation is based on **price per litre**.
 
-The frontend sends a `POST` request to:
+That means the current runtime product does **not yet** support manual:
 
-- `/api/routes`
+- CNG price per kg
+- LPG pricing rules
+- EV charging cost per kWh
 
-It includes:
+Those can be added later, but they are not part of the current calculation path.
 
-- source latitude and longitude
-- destination latitude and longitude
-- vehicle type
-- mileage in km/l
+---
 
-### Step 4: Backend fetches route alternatives
+## 8. End-To-End User Flow
 
-The backend asks **OSRM** for up to 3 route alternatives.
+### Step 1: User selects source and destination
 
-Current code behavior:
+The user can:
 
-- it uses the **public OSRM demo server** at `https://router.project-osrm.org/route/v1/driving`
+- search using OpenStreetMap Nominatim
+- click on the map
 
-### Step 5: Backend fetches weather
+### Step 2: User selects vehicle source mode
 
-The backend also fetches current weather from **Open-Meteo** using the source coordinates.
+The user chooses one of:
 
-Weather values used:
+- `Manual Real Vehicle`
+- `Free Official Catalog`
+
+### Step 3: User provides vehicle data
+
+In manual mode, the user enters real mileage.
+
+In official mode, the user chooses a real record from the free catalog.
+
+### Step 4: User enters today's fuel price
+
+Fuel price is currently user-entered because it changes:
+
+- by day
+- by location
+- by fuel type
+
+This is better than pretending the app has a free perfect live fuel-price API for all users.
+
+### Step 5: Frontend sends request to backend
+
+The frontend sends a request to:
+
+- `POST /api/routes`
+
+The request contains:
+
+- source coordinates
+- destination coordinates
+- selected vehicle source
+- either a `vehicle_id` or a `manual_vehicle` object
+- fuel price per litre
+
+### Step 6: Backend fetches route alternatives
+
+The backend calls OSRM and asks for:
+
+- full route geometry
+- step-by-step route instructions
+- up to 3 route alternatives
+
+### Step 7: Backend fetches live weather
+
+The backend requests current weather from Open-Meteo using the source coordinates.
+
+Weather fields currently used are:
 
 - temperature
 - wind speed
 - precipitation
 
-### Step 6: Backend extracts useful route features
+### Step 8: Backend analyzes each route
 
-For each route, the backend computes:
+For each returned route, the backend calculates:
 
-- distance in km
-- duration in minutes
+- total distance
+- total duration
 - average speed
-- road type: `highway`, `urban`, or `mixed`
-- stops per km
+- route step list
+- road profile shares
+- stop density
 
-Road type is estimated from OSRM step names and road references using keyword matching.
+### Step 9: Backend estimates fuel for each route
 
-### Step 7: ML prediction runs
+The backend uses the selected vehicle efficiency and route conditions to estimate:
 
-The backend calls the trained ML model and predicts:
+- fuel used in litres
+- trip cost
+- effective route efficiency
+- adjustment factor
 
-- fuel consumed in litres
-
-If the ML model fails for any reason, the backend falls back to a simple formula:
-
-- `distance / mileage`
-
-### Step 8: Best routes are labeled
+### Step 10: Backend marks the best routes
 
 The backend marks:
 
-- the route with the lowest predicted fuel as `is_fuel_efficient`
-- the route with the smallest duration as `is_fastest`
+- the route with the lowest estimated fuel use
+- the route with the lowest duration
 
-### Step 9: Frontend displays comparison
+### Step 11: Frontend displays the results
 
 The frontend shows:
 
+- all available routes
 - fuel litres
-- estimated fuel cost
-- distance
-- duration
+- cost
 - road type
-- average speed
-- weather summary
+- effective route efficiency
+- weather information
+- selected vehicle information
+- whether the route is the lowest-fuel route or the fastest route
 
-### Step 10: User saves a trip
+### Step 12: User can save the best route
 
-Only the route marked as the most fuel-efficient gets a visible save button in the UI.
+The current UI provides a save button on the route marked as the lowest-fuel route.
 
-The frontend sends that route to:
+Saved trip data is written into SQLite.
 
-- `/api/save-trip`
+---
 
-### Step 11: History is loaded
+## 9. Exact Fuel Calculation Logic
 
-Saved trips are shown in the **Trip History** panel using:
+This is the most important section.
 
-- `/api/history`
+The app does **not** simply do:
 
-## 6. Project Architecture
+- `fuel = distance / mileage`
 
-The project follows a simple full-stack architecture:
+That would be too simplistic for route comparison.
+
+Instead, the app does a more realistic version of that idea.
+
+### 9.1 Base efficiency inputs
+
+Every selected vehicle record used by the estimator contains:
+
+- `city_kmpl`
+- `highway_kmpl`
+- `combined_kmpl`
+
+For manual vehicles:
+
+- `combined_kmpl` is required
+- `city_kmpl` is optional
+- `highway_kmpl` is optional
+- if city or highway are missing, they fall back to `combined_kmpl`
+
+### 9.2 Why km/l is converted
+
+The user naturally understands mileage in:
+
+- km/l
+
+But blending city and highway behavior is easier if fuel use is expressed in:
+
+- litres per 100 km
+
+So the estimator converts km/l into litres per 100 km.
+
+### 9.3 Conversion formula
+
+The formula used is:
 
 ```text
-Frontend (Next.js + React)
-        |
-        v
-Backend API (FastAPI)
-        |
-        +--> OSRM routing service
-        +--> Open-Meteo weather API
-        +--> ML prediction module
-        +--> SQLite database
+litres_per_100km = 100 / kmpl
 ```
 
-### High-level responsibilities
+Example:
 
-**Frontend**
+```text
+20 km/l  ->  5.0 L/100km
+10 km/l  ->  10.0 L/100km
+```
 
-- collects user input
-- displays map and route results
-- calls backend APIs
-- displays trip history
+This is important because a weighted blend of fuel consumption works better in L/100km than directly in km/l.
 
-**Backend**
+### 9.4 Route profile blending
 
-- validates incoming data
-- calls routing and weather services
-- computes route features
-- predicts fuel usage
-- saves and returns trip history
+The backend estimates how much of a route looks like:
 
-**ML module**
+- urban driving
+- highway driving
+- unclassified or mixed driving
 
-- loads trained artifacts
-- transforms incoming route data
-- predicts fuel consumption
+Then it blends the vehicle's efficiency values.
 
-**Database**
+The base blended fuel consumption is:
 
-- stores saved trip history
+```text
+base_l_per_100km =
+    city_share * city_l_per_100km
+  + highway_share * highway_l_per_100km
+  + neutral_share * combined_l_per_100km
+```
 
-## 7. Frontend Explanation
+Where:
 
-The frontend lives in the `frontend/` folder and is built with **Next.js 14** using the App Router.
+```text
+neutral_share = 1 - city_share - highway_share
+```
 
-### Important frontend files
+If the route cannot be classified from step names, the estimator falls back to the combined efficiency.
+
+### 9.5 Adjustment factors
+
+After the base blended fuel consumption is found, the backend applies adjustment factors.
+
+Current adjustment sources:
+
+- temperature
+- wind
+- rain
+- average speed
+- stop density
+
+Each factor increases fuel use when conditions are less efficient.
+
+#### Temperature factor
+
+- below 10°C: penalty increases up to 12%
+- above 30°C: penalty increases up to 6%
+- between 10°C and 30°C: no temperature penalty
+
+#### Wind factor
+
+- higher wind speed increases fuel use
+- current cap is 10%
+
+#### Rain factor
+
+- more precipitation slightly increases fuel use
+- current cap is 5%
+
+#### Speed factor
+
+- very low average speed increases fuel use because of slow urban movement
+- very high average speed also increases fuel use
+- middle speeds are treated as neutral
+
+#### Stop factor
+
+- more stops per km increases fuel use
+- current stop penalty begins above 2 stops per km
+- current cap is 12%
+
+### 9.6 Final combined adjustment factor
+
+The estimator multiplies all factors together:
+
+```text
+adjustment_factor =
+    temperature_factor
+  * wind_factor
+  * rain_factor
+  * speed_factor
+  * stop_factor
+```
+
+### 9.7 Final route fuel consumption
+
+Then the route fuel consumption is calculated:
+
+```text
+effective_l_per_100km = base_l_per_100km * adjustment_factor
+```
+
+Then total fuel for the trip is:
+
+```text
+fuel_litres = distance_km * effective_l_per_100km / 100
+```
+
+### 9.8 Effective route mileage shown to the user
+
+The app also converts the final result back into a route-specific mileage view:
+
+```text
+effective_kmpl = distance_km / fuel_litres
+```
+
+This is the route-adjusted mileage shown in the result card.
+
+### 9.9 Fuel cost formula
+
+Trip cost is then calculated using the user-entered fuel price:
+
+```text
+fuel_cost = fuel_litres * fuel_price_per_litre
+```
+
+### 9.10 What happens if live weather is unavailable
+
+The current product does **not** inject fake weather anymore.
+
+If the weather API is unavailable:
+
+- temperature is left unavailable
+- wind is left unavailable
+- precipitation is left unavailable
+- weather factor becomes neutral instead of fake
+
+So the estimator still works, but it behaves like:
+
+- route adjustment + vehicle efficiency
+- without a weather penalty or bonus
+
+That is more honest than inventing weather values.
+
+---
+
+## 10. How Routes Are Understood Internally
+
+The backend gets route alternatives from OSRM with step data.
+
+Each route contains multiple steps, and the backend reads those steps to estimate route behavior.
+
+### 10.1 Distance
+
+Distance comes from the route engine and is converted from metres to kilometres.
+
+### 10.2 Duration
+
+Duration comes from the route engine and is converted from seconds to minutes.
+
+### 10.3 Average speed
+
+Average speed is derived as:
+
+```text
+avg_speed_kmh = distance_km / (duration_min / 60)
+```
+
+### 10.4 Road profile classification
+
+The backend looks at route step names and references.
+
+It checks for highway-style keywords such as:
+
+- highway
+- expressway
+- motorway
+- NH
+- national highway
+- freeway
+- interstate
+
+It also checks for urban-style keywords such as:
+
+- street
+- road
+- avenue
+- lane
+- boulevard
+- marg
+- nagar
+
+From those matches, it calculates:
+
+- `highway_share`
+- `urban_share`
+- `unclassified_share`
+
+Then it chooses a summary `road_type`:
+
+- `highway` if highway share is at least 0.5
+- `urban` if urban share is at least 0.5
+- `mixed` otherwise
+
+### Important note about this logic
+
+This road-type detection is **heuristic**, not perfect ground truth.
+
+That means:
+
+- it is a reasonable practical inference
+- but it is not the same as having a complete official per-segment road classification for every route step
+
+### 10.5 Stop density
+
+The backend estimates stop density from route manoeuvres:
+
+```text
+stops_per_km = max(number_of_steps - 2, 0) / distance_km
+```
+
+This is used as a simple stop-and-go traffic signal.
+
+Again, this is an inference, not direct traffic telemetry.
+
+---
+
+## 11. How The Best Routes Are Picked
+
+This is another important section.
+
+The app does **not** assume the shortest route is always the cheapest route.
+
+Instead, each returned route alternative is estimated independently.
+
+After the backend finishes estimating all routes, it compares them.
+
+### 11.1 Lowest fuel route
+
+The backend finds:
+
+```text
+route with minimum fuel_litres
+```
+
+That route is marked:
+
+- `is_fuel_efficient = true`
+
+In the UI, this appears as:
+
+- **Lowest Fuel Use**
+
+### 11.2 Fastest route
+
+The backend also finds:
+
+```text
+route with minimum duration_min
+```
+
+That route is marked:
+
+- `is_fastest = true`
+
+In the UI, this appears as:
+
+- **Fastest**
+
+### 11.3 Alternative routes
+
+Any other routes are shown as:
+
+- **Alternative**
+
+### 11.4 Can one route be both?
+
+Yes.
+
+If one route has both:
+
+- the smallest fuel estimate
+- the shortest duration
+
+then the same route is both the fastest and the most fuel-efficient route.
+
+In the current UI, the visible badge priority favors:
+
+- `Lowest Fuel Use`
+
+because that badge check is evaluated first.
+
+The map coloring also prioritizes the fuel-efficient highlighting.
+
+---
+
+## 12. Why This Route Choice Logic Makes Sense
+
+This route-picking logic is practical because:
+
+- the fastest route is not always the cheapest
+- the shortest route is not always the most fuel-efficient
+- city-heavy roads can use more fuel than smoother highway routes
+- stop-and-go movement can change fuel consumption a lot
+
+So the app correctly treats route selection as a **comparison problem**, not as a one-rule problem.
+
+---
+
+## 13. Frontend Architecture
+
+The frontend lives in:
+
+- `frontend/`
+
+It is a Next.js application.
+
+### Main frontend files
 
 - `frontend/src/app/page.js`
 - `frontend/src/components/RouteForm.js`
-- `frontend/src/components/LocationSearch.js`
 - `frontend/src/components/RouteResults.js`
 - `frontend/src/components/TripHistory.js`
 - `frontend/src/components/Map.js`
+- `frontend/src/components/LocationSearch.js`
+- `frontend/src/lib/api.js`
 
 ### Frontend responsibilities
 
 #### `page.js`
 
-This is the main screen of the app. It:
-
-- stores source and destination state
-- stores returned routes and weather
-- calls the backend with Axios
-- passes data into child components
-- triggers history refresh after saving a trip
-
-#### `RouteForm.js`
-
-This file handles:
-
-- source and destination search UI
-- vehicle type selection
-- mileage input
-- form submission
-- clear/reset action
-
-#### `LocationSearch.js`
-
-This component provides autocomplete search using Nominatim.
-
-Technical details:
-
-- debounced search with a 300 ms delay
-- shows up to 5 suggestions
-- stores `lat`, `lng`, and `displayName`
-- restricts results to India
-
-#### `Map.js`
-
-This component uses **Leaflet** and **react-leaflet**.
+This is the main page controller.
 
 It:
 
-- renders the map
-- places source and destination markers
-- draws route polylines
-- colors routes based on type
-- fits the map bounds automatically
-- allows location selection by clicking the map
+- stores selected source and destination
+- stores the returned routes
+- stores weather data
+- stores the selected vehicle record
+- sends `POST /api/routes`
+- sends `POST /api/save-trip`
+- refreshes history after a save
 
-Route colors:
+#### `RouteForm.js`
 
-- green for most fuel efficient
-- blue for fastest
-- gray for other alternatives
+This is the main user-input component.
+
+It:
+
+- supports both manual profile mode and official catalog mode
+- loads official vehicle years, makes, models, and variants from backend APIs
+- asks only the relevant manual-vehicle questions by default
+- makes city/highway mileage optional inside advanced details
+- requires user-entered fuel price
 
 #### `RouteResults.js`
 
-This displays route comparison cards and weather information.
+This displays:
 
-It highlights:
-
-- most fuel efficient route
-- fastest route
-- alternatives
-
-It also computes the presentation of:
-
-- time formatting
-- weather card
-- save button for the best route
+- selected vehicle record used for the estimate
+- fuel price used
+- weather data
+- route comparison cards
+- litres and cost
+- road type
+- effective route mileage
+- route labels such as lowest fuel use or fastest
 
 #### `TripHistory.js`
 
-This component:
+This displays saved trip history from SQLite.
 
-- fetches saved history from the backend
-- shows trips in a collapsible table
-- calculates displayed fuel cost using a hardcoded fuel price
+It shows:
 
-### Frontend configuration
+- date
+- vehicle label
+- fuel type
+- vehicle data source
+- route summary
+- distance
+- fuel litres
+- fuel price used
+- estimated cost
 
-The frontend currently uses:
+#### `LocationSearch.js`
 
-- `jsconfig.json` for the `@/*` import alias
-- Tailwind CSS for utility styling
-- PostCSS and Autoprefixer for CSS processing
+This component uses:
 
-### Important frontend implementation note
+- OpenStreetMap Nominatim
 
-Although the README mentions `NEXT_PUBLIC_API_URL`, the current frontend code uses a hardcoded value:
+It is no longer restricted to India-only search.
 
-- `http://localhost:8000`
+#### `Map.js`
 
-So right now the app expects the backend to be running locally on port `8000`.
+This uses:
 
-## 8. Backend Explanation
+- Leaflet
+- React Leaflet
 
-The backend lives in the `backend/` folder and is built with **FastAPI**.
+It:
 
-### Important backend files
+- shows source and destination markers
+- draws all route alternatives
+- highlights the lowest-fuel route
+- highlights the fastest route
+- defaults to a world map view when no source is selected
+
+---
+
+## 14. Backend Architecture
+
+The backend lives in:
+
+- `backend/`
+
+It is a FastAPI application.
+
+### Main backend files
 
 - `backend/main.py`
-- `backend/database.py`
-- `backend/ml/model.py`
-- `backend/ml/train.py`
-
-There is also a duplicate file:
-
 - `backend/app/main.py`
+- `backend/database.py`
+- `backend/vehicle_catalog.py`
+- `backend/fuel_estimator.py`
+- `backend/data/vehicles.csv.zip`
+- `backend/data/update_vehicle_dataset.py`
 
-Current startup script usage shows that `backend/main.py` is the practical entry point because `start.sh` runs:
+### Backend responsibilities
 
-```bash
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-```
+#### `main.py`
 
-### Backend endpoints
+This is the active backend entrypoint.
 
-#### `POST /api/routes`
+It handles:
 
-Purpose:
+- request validation using Pydantic
+- vehicle resolution
+- route fetching from OSRM
+- weather fetching from Open-Meteo
+- route analysis
+- fuel estimation
+- route ranking
+- save-trip API
+- history API
+- health API
 
-- generate route alternatives
-- estimate fuel for each route
+#### `app/main.py`
 
-Request fields:
+This currently mirrors the backend entrypoint so the app can also run from that path if needed.
 
-- `source_lat`
-- `source_lng`
-- `dest_lat`
-- `dest_lng`
-- `vehicle_type`
-- `mileage_kmpl`
+#### `vehicle_catalog.py`
 
-Response includes:
+This file:
+
+- loads the official free vehicle dataset from the zip file
+- filters supported fuel types
+- converts MPG to km/l
+- builds catalog indexes for year, make, model, and variant
+- returns the selected official vehicle record by id
+
+The current supported primary fuels in the official catalog path are:
+
+- Regular Gasoline
+- Premium Gasoline
+- Midgrade Gasoline
+- Diesel
+
+Vehicles with a secondary fuel are filtered out in the current runtime logic.
+
+#### `fuel_estimator.py`
+
+This file contains the transparent estimation logic.
+
+It performs:
+
+- km/l to L/100km conversion
+- city/highway/combined blending
+- weather factor application when weather data exists
+- speed factor application
+- stop-density factor application
+- final litre and cost calculation
+
+#### `database.py`
+
+This file manages SQLite.
+
+It:
+
+- creates the trip-history table if needed
+- adds missing columns when the schema evolves
+- saves trip rows
+- fetches recent trip rows
+
+---
+
+## 15. Current Backend APIs
+
+### `GET /api/vehicles/years`
+
+Returns the list of years available in the official vehicle catalog.
+
+### `GET /api/vehicles/makes?year=...`
+
+Returns available makes for the selected year.
+
+### `GET /api/vehicles/models?year=...&make=...`
+
+Returns available models for the selected year and make.
+
+### `GET /api/vehicles/options?year=...&make=...&model=...`
+
+Returns the matching vehicle variants from the official catalog.
+
+### `POST /api/routes`
+
+This is the main calculation API.
+
+It accepts:
+
+- source latitude and longitude
+- destination latitude and longitude
+- vehicle source type
+- selected official `vehicle_id` or `manual_vehicle` profile
+- fuel price per litre
+
+It returns:
 
 - route list
-- weather
-- vehicle type
-- mileage
+- route geometry
+- selected vehicle record used for estimation
+- weather object
+- fuel price used
+- pricing note
 
-For each route, the backend returns:
+### `POST /api/save-trip`
 
-- `index`
-- `distance_km`
-- `duration_min`
-- `avg_speed_kmh`
-- `fuel_litres`
-- `fuel_cost_inr`
-- `road_type`
-- `geometry`
-- `summary`
-- `is_fuel_efficient`
-- `is_fastest`
+Stores a selected route estimate in SQLite.
 
-#### `POST /api/save-trip`
+### `GET /api/history`
 
-Purpose:
+Returns recent saved trips.
 
-- save a selected trip into the local database
+### `GET /api/health`
 
-#### `GET /api/history`
+Returns:
 
-Purpose:
+- service status
+- catalog summary
+- current estimation mode summary
 
-- fetch up to 20 recent saved trips
+---
 
-#### `GET /api/health`
+## 16. Database Use
 
-Purpose:
+The active runtime database is:
 
-- simple service health check
+- SQLite
+- file: `backend/fast.db`
 
-### Backend route processing logic
-
-The backend does the following for each request:
-
-1. Calls OSRM for route alternatives.
-2. Calls Open-Meteo for source-point weather.
-3. Reads every route leg and step.
-4. Estimates road type from street names and road references.
-5. Estimates stop density from route manoeuvres.
-6. Computes distance, duration, and average speed.
-7. Predicts fuel litres using the ML model.
-8. Computes fuel cost with a fixed price of `105 INR/litre`.
-9. Returns all routes to the frontend.
-
-### Error handling
-
-The backend handles failures in a practical way:
-
-- if OSRM returns a bad status, it raises an API error
-- if weather fails, it falls back to default weather values
-- if ML prediction fails, it falls back to `distance / mileage`
-
-This makes the app more resilient during demos and local development.
-
-## 9. Machine Learning Explanation
-
-The ML system is one of the most important parts of the project.
-
-### ML goal
-
-Its job is to estimate:
-
-- **how many litres of fuel a route is likely to consume**
-
-### Input features used by the model
-
-The trained model uses these features:
-
-- `distance_km`
-- `avg_speed_kmh`
-- `vehicle_mileage_kmpl`
-- `temperature_c`
-- `wind_speed_kmh`
-- `precipitation_mm`
-- `num_stops_per_km`
-- one-hot encoded `vehicle_type`
-- one-hot encoded `road_type`
-
-### Supported vehicle types
-
-- bike
-- car
-- suv
-- truck
-
-### Supported road types
-
-- highway
-- urban
-- mixed
-
-### Training data
-
-The project includes:
-
-- `backend/ml/data/fuel_dataset.csv`
-- `backend/ml/data/generate_dataset.py`
-
-The dataset is not random dummy data. It is **synthetic but physics-informed**.
-
-The generator uses ideas based on:
-
-- baseline mileage
-- speed efficiency curves
-- cold/hot weather penalties
-- wind drag effects
-- rain penalties
-- stop-and-go penalties
-
-This is a strong academic/demo approach because it gives the model structured training data even when real trip telemetry is not available.
-
-### Training pipeline
-
-The training script:
-
-- loads the CSV dataset
-- one-hot encodes categorical variables
-- splits data into train and test sets
-- scales features
-- trains multiple regressors
-- compares performance
-- saves the best model artifacts
-
-Models trained:
-
-- Linear Regression
-- Decision Tree Regressor
-- Random Forest Regressor
-- Voting Regressor ensemble
-
-### Saved ML artifacts
-
-The repo already contains trained artifacts in:
-
-- `backend/ml/models/best_model.joblib`
-- `backend/ml/models/scaler.joblib`
-- `backend/ml/models/feature_names.joblib`
-- `backend/ml/models/model_metadata.joblib`
-
-### Current trained model
-
-From the saved metadata, the selected best model is:
-
-- **RandomForest**
-
-Stored evaluation metrics:
-
-- `R2`: `0.9609682745340774`
-- `MAE`: `4.507150945540677`
-- `RMSE`: `8.283215443116495`
-
-Training split sizes:
-
-- train rows: `1600`
-- test rows: `400`
-
-### Inference behavior
-
-At runtime:
-
-- the model is lazy-loaded only when needed
-- the scaler and feature names are also loaded
-- the backend builds a feature vector in the exact training order
-- prediction is rounded to 3 decimal places
-
-## 10. Database Use
-
-This section is especially important because the repository contains **two database stories**:
-
-- an older or planned **Supabase/PostgreSQL** design
-- the current active **SQLite** implementation
-
-### Current active database
-
-The running backend uses:
-
-- Python `sqlite3`
-- local file: `backend/fast.db`
-
-This is the database that is actually connected in the current code.
-
-### Active table used by the app
-
-The active table is:
+### Active table
 
 - `trip_history`
 
-Columns:
+### What is stored in trip history
 
-| Column | Type | Purpose |
-| --- | --- | --- |
-| `id` | INTEGER | primary key |
-| `source_name` | TEXT | optional source label |
-| `dest_name` | TEXT | optional destination label |
-| `source_lat` | REAL | source latitude |
-| `source_lng` | REAL | source longitude |
-| `dest_lat` | REAL | destination latitude |
-| `dest_lng` | REAL | destination longitude |
-| `vehicle_type` | TEXT | selected vehicle type |
-| `mileage` | REAL | user-entered mileage |
-| `distance_km` | REAL | route distance |
-| `fuel_litres` | REAL | predicted fuel usage |
-| `route_name` | TEXT | route summary name |
-| `created_at` | TIMESTAMP | save timestamp |
+The database stores:
 
-### What is stored in the database
-
-When a user saves a trip, the backend stores:
-
-- coordinates of source and destination
+- source name
+- destination name
+- source latitude and longitude
+- destination latitude and longitude
 - vehicle type
 - mileage
-- distance
-- predicted fuel litres
+- distance in km
+- estimated fuel litres
 - route summary name
-- timestamp
+- vehicle id
+- vehicle label
+- vehicle year
+- vehicle make
+- vehicle model
+- fuel type
+- city km/l
+- highway km/l
+- combined km/l
+- fuel price per litre used in that calculation
+- estimated trip cost
+- estimation method text
+- vehicle data source
+- source note
+- creation timestamp
 
-### What the database is used for in the app
+### What the database is currently used for
 
-Database usage is currently simple and focused:
+- trip history persistence
 
-- `init_db()` creates the table if it does not exist
-- `save_trip()` inserts a trip
-- `get_trips()` returns the latest 20 saved trips
-
-So the database is currently being used for:
-
-- **trip history persistence**
-
-It is not currently being used for:
-
-- authentication
-- per-user isolation
-- vehicle profiles
-- analytics
-- route caching
-
-### Current database state
-
-The local `fast.db` file already exists in the repo, and it currently contains saved trip history rows. That means the app has already been run and used locally.
-
-### Legacy or planned database design
-
-The file `database.sql` defines a different database model using **Supabase/PostgreSQL** with these tables:
-
-- `users`
-- `vehicles`
-- `trips`
-
-That schema suggests an earlier or future architecture with:
+### What the database is not currently used for
 
 - user accounts
-- saved vehicles
-- richer trip records
+- authentication
+- multi-user access control
+- admin panel
+- cloud sync
 
-However, that schema is **not the database the current backend is using**.
+### Important legacy note
 
-### Practical conclusion about the database
+There is also a file in the repo named:
 
-If someone sets up the project based only on the running code, they need:
+- `database.sql`
 
-- the SQLite file and Python backend
+That file reflects an older database direction and is **not** the active runtime database for the current product.
 
-If someone sets it up based only on `README.md` and `database.sql`, they might think Supabase is required.
+The active runtime database is SQLite in `backend/fast.db`.
 
-So the most accurate description is:
+---
 
-> The current implementation uses SQLite for trip history, while Supabase/PostgreSQL appears to be an older or planned design that is still present in the repository documentation.
+## 17. Technologies Used
 
-## 11. External Services and APIs Used
-
-The project depends on multiple third-party or open public services.
-
-### 1. OSRM
-
-Used for:
-
-- route calculation
-- alternative paths
-- route geometry
-- route steps
-
-Current code endpoint:
-
-- `https://router.project-osrm.org/route/v1/driving`
-
-### 2. Open-Meteo
-
-Used for:
-
-- current temperature
-- wind speed
-- precipitation
-
-Endpoint used by backend:
-
-- `https://api.open-meteo.com/v1/forecast`
-
-### 3. Nominatim
-
-Used for:
-
-- location search / geocoding
-
-Endpoint used by frontend:
-
-- `https://nominatim.openstreetmap.org/search`
-
-### 4. OpenStreetMap tiles
-
-Used for:
-
-- rendering the map background in Leaflet
-
-## 12. Technologies Used
-
-### Frontend technologies
+### Frontend
 
 - Next.js 14
 - React 18
-- JavaScript
 - Axios
+- Tailwind CSS
 - Leaflet
 - React Leaflet
-- Tailwind CSS
-- PostCSS
-- Autoprefixer
 
-### Backend technologies
+### Backend
 
 - Python
 - FastAPI
 - Uvicorn
 - Pydantic
 - HTTPX
-- SQLite via Python `sqlite3`
+- SQLite
 
-### Machine learning and data technologies
+### Free external data/services
 
-- scikit-learn
-- pandas
-- numpy
-- joblib
+- OSRM for routing
+- Open-Meteo for weather
+- OpenStreetMap Nominatim for geocoding/search
+- FuelEconomy.gov dataset for the structured official vehicle catalog
 
-### Map and data ecosystem
+### Development and runtime approach
 
-- OpenStreetMap
-- OSRM
-- Nominatim
+- free/open public services where practical
+- local SQLite database for persistence
+- no paid proprietary map dependency in the current implementation
+- no paid fuel-price API dependency in the current implementation
+
+---
+
+## 18. Real Data Sources Used In The Current Product
+
+### Routing
+
+- OSRM public routing service
+- backend URL: `https://router.project-osrm.org/route/v1/driving`
+
+### Weather
+
 - Open-Meteo
+- backend URL: `https://api.open-meteo.com/v1/forecast`
 
-### Development tools and runtime tools
+### Geocoding and place search
 
-- Python virtual environment
-- npm
-- package-lock
-- shell startup script (`start.sh`)
+- OpenStreetMap Nominatim
+- frontend URL: `https://nominatim.openstreetmap.org/search`
 
-## 13. Folder and File Structure
+### Official vehicle catalog
 
-```text
-FAST/
-├── backend/
-│   ├── main.py
-│   ├── database.py
-│   ├── fast.db
-│   ├── requirements.txt
-│   ├── app/
-│   │   └── main.py
-│   └── ml/
-│       ├── model.py
-│       ├── train.py
-│       ├── data/
-│       │   ├── fuel_dataset.csv
-│       │   └── generate_dataset.py
-│       └── models/
-│           ├── best_model.joblib
-│           ├── scaler.joblib
-│           ├── feature_names.joblib
-│           └── model_metadata.joblib
-├── frontend/
-│   ├── package.json
-│   ├── next.config.js
-│   ├── tailwind.config.js
-│   ├── postcss.config.js
-│   └── src/
-│       ├── app/
-│       │   ├── layout.js
-│       │   ├── page.js
-│       │   └── globals.css
-│       └── components/
-│           ├── LocationSearch.js
-│           ├── Map.js
-│           ├── RouteForm.js
-│           ├── RouteResults.js
-│           └── TripHistory.js
-├── README.md
-├── database.sql
-├── start.sh
-└── explain.md
-```
+- FuelEconomy.gov downloadable vehicle dataset
+- dataset refresh URL: `https://www.fueleconomy.gov/feg/epadata/vehicles.csv.zip`
 
-## 14. How the Project Is Set Up Right Now
+---
 
-This section explains the **actual working setup based on the current code**.
+## 19. What Has Been Removed From The Active Runtime Logic
+
+Earlier project iterations included synthetic-data and ML experiment files such as the material inside:
+
+- `backend/ml/`
+
+Those files still exist in the repository for historical or experimental purposes.
+
+But the current runtime product does **not** depend on them for route calculation.
+
+The active route-estimation path is now:
+
+- real official vehicle catalog data when available
+- real manual vehicle profile data when needed
+- formula-based transparent route adjustment
+
+So the synthetic dataset is no longer the active source of truth for runtime estimation.
+
+---
+
+## 20. Setup And How The Project Is Run
 
 ### Backend setup
 
+From the project root:
+
 ```bash
 cd backend
-python -m venv venv
+python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
-uvicorn main:app --reload --port 8000
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
-Backend runs on:
+Backend requirements currently come from:
 
-- `http://localhost:8000`
+- `backend/requirements.txt`
 
-API docs:
+Current backend Python dependencies are:
 
-- `http://localhost:8000/docs`
+- fastapi
+- uvicorn[standard]
+- httpx
+- pydantic
 
 ### Frontend setup
+
+From the project root:
 
 ```bash
 cd frontend
@@ -822,162 +1122,120 @@ npm install
 npm run dev
 ```
 
-Frontend runs on:
+Frontend dependencies currently come from:
 
-- `http://localhost:3000`
+- `frontend/package.json`
 
-### One-command startup
+Main frontend dependencies are:
 
-The repo also has:
+- next
+- react
+- react-dom
+- leaflet
+- react-leaflet
+- axios
+- tailwindcss
+- postcss
+- autoprefixer
+
+### Combined startup script
+
+The repository also includes:
 
 - `start.sh`
 
 It starts:
 
-- backend on port `8000`
-- frontend on port `3000`
+- backend on port 8000
+- frontend on port 3000
 
-### Database setup
+It also prints:
 
-No manual database setup is required for the current SQLite-based version because:
+- frontend URL
+- backend URL
+- FastAPI docs URL
 
-- `init_db()` creates the `trip_history` table automatically if needed
+### Dataset requirement
 
-### ML setup
+For the official catalog flow, the following file must be present:
 
-No retraining is required for normal usage because trained model artifacts already exist in the repo.
+- `backend/data/vehicles.csv.zip`
 
-Retraining is only needed if:
+The project also includes a helper script to refresh that dataset:
 
-- you change the dataset
-- you want a new model
-- you want updated metrics
+- `backend/data/update_vehicle_dataset.py`
 
-### External service setup
+---
 
-Current code relies on public services directly, so these do not need local installation for the app to work:
+## 21. What Makes The Current Product Trustworthy Compared To The Old Version
 
-- public OSRM routing server
-- Open-Meteo weather API
-- Nominatim geocoding
+The current product is more trustworthy because:
 
-## 15. Setup Notes from README vs Current Code
+- it no longer relies on synthetic runtime data
+- it no longer assigns hardcoded mileage defaults to user vehicle categories
+- it requires the user to enter fuel price instead of assuming it
+- it does not fake weather when weather data is missing
+- it uses route-by-route estimation instead of one generic number
+- it clearly shows the vehicle record used for the estimate
+- it stores the vehicle source and price used in history
 
-This repo has some documentation drift. These are the main differences.
+---
 
-### README says
+## 22. Current Limitations
 
-- database is Supabase
-- OSRM should be run locally with Docker
-- backend reads environment values such as `SUPABASE_URL`, `SUPABASE_KEY`, `OSRM_BASE_URL`
-- frontend can use `NEXT_PUBLIC_API_URL`
-- frontend stack is described as TypeScript
-- setup examples mention folders like `fast-backend` and `fast-frontend`
+This project is much stronger now, but it still has real limitations.
 
-### Current code says
+### Vehicle data limitations
 
-- database is SQLite in `backend/fast.db`
-- OSRM base URL is hardcoded to the public demo server
-- weather API is hardcoded
-- frontend API base is hardcoded to `http://localhost:8000`
-- there is no active environment-variable wiring in the current implementation
-- the frontend source files are JavaScript files such as `page.js` and component `.js` files
-- the actual project folders are `backend/` and `frontend/`
+- there is no single structured free India-wide official vehicle dataset in this project for all bikes, scooters, buses, trucks, and auto-rickshaws
+- manual profile accuracy depends on the user's entered mileage
+- the official catalog path is strongest for passenger/light vehicles
 
-### Why this matters
+### Routing limitations
 
-A new developer should not assume the README fully matches the running code. The current application can be understood best by trusting the source code first.
+- the current routing service is OSRM public routing
+- the current mode used is driving
+- route quality depends on the public routing service response
 
-## 16. Technical Strengths of the Project
+### Weather limitations
 
-This project has several good ideas:
+- current weather is fetched from the source point, not along the full route
+- if live weather is unavailable, weather effects are neutral instead of route-specific
 
-- combines routing, weather, and ML into one product
-- uses open-source map infrastructure instead of proprietary APIs
-- includes a full working frontend and backend
-- has graceful fallback logic
-- stores trip history locally for persistence
-- uses a structured ML pipeline with saved artifacts
-- exposes clean API endpoints for future expansion
+### Estimation limitations
 
-## 17. Current Limitations
+- road type is inferred from route-step keywords, which is heuristic
+- stop density is estimated from manoeuvre count, not from live traffic telemetry
+- the product does not yet read real-time vehicle telemetry or OBD data
 
-The project works, but it also has some important current limitations.
+### Fuel-type limitations
 
-### 1. Documentation mismatch
+- manual profile mode currently supports only petrol and diesel
+- CNG, LPG, and EV pricing models are not yet implemented in the active route calculator
 
-The docs still mention Supabase and local OSRM, while current code uses SQLite and public endpoints.
+---
 
-### 2. Hardcoded configuration
+## 23. Final Summary
 
-These values are hardcoded in source code:
+FAST is now a much more real and logical product than the earlier synthetic-demo version.
 
-- backend API URL in frontend
-- OSRM base URL
-- Open-Meteo base URL
-- fuel price
+Its current logic is:
 
-This makes deployment and environment switching harder.
+1. get a real vehicle efficiency record
+2. get real route alternatives
+3. estimate route behavior from distance, duration, steps, road profile, and stop density
+4. apply live weather adjustments when available
+5. calculate litres used from mileage and route conditions
+6. calculate cost using the user's entered fuel price
+7. mark the lowest-fuel route and the fastest route separately
+8. save results in SQLite for history
 
-### 3. No user accounts
+That means the project is now based on:
 
-Although `database.sql` suggests user-based storage, the current running app stores all history in one local database without authentication.
+- real data where available
+- manual real input where structured data is not available
+- transparent formulas
+- explainable route ranking
+- free tools and services
 
-### 4. Public service dependence
-
-The app currently depends on public routing and geocoding services, which may have:
-
-- rate limits
-- availability issues
-- demo-server limitations
-
-### 5. Synthetic training data
-
-The ML system is thoughtfully built, but it is still trained on generated data rather than real telemetry from vehicles.
-
-### 6. Duplicate backend entrypoint
-
-There are two similar backend app files:
-
-- `backend/main.py`
-- `backend/app/main.py`
-
-That can confuse maintenance unless one becomes the clearly supported entrypoint.
-
-## 18. Future Improvement Ideas
-
-Natural next improvements for FAST would be:
-
-- connect the app to environment variables instead of hardcoded URLs
-- choose one database direction and remove ambiguity
-- add authentication and per-user history
-- support saved vehicle profiles
-- self-host OSRM for better control and reliability
-- add real traffic or elevation data
-- train on real trip/fuel logs
-- allow saving any route, not only the most fuel-efficient one
-- add unit tests and API tests
-- clean up duplicate backend files
-
-## 19. Short Summary
-
-FAST is a smart travel planning application that estimates fuel usage for multiple route options instead of showing only speed or distance.
-
-In its current implementation, it:
-
-- uses a **Next.js frontend**
-- uses a **FastAPI backend**
-- uses a **Random Forest ML model** to estimate fuel consumption
-- uses **SQLite** to save recent trip history
-- uses **OSRM**, **Open-Meteo**, **Nominatim**, and **OpenStreetMap**
-
-The project idea is strong because it combines:
-
-- route planning
-- fuel awareness
-- weather-aware prediction
-- vehicle-specific comparison
-
-The most important practical onboarding note is this:
-
-> The repository documentation still references Supabase and local OSRM, but the current running application uses SQLite and public API endpoints hardcoded in the codebase.
+This makes the product suitable as a serious prototype and a strong practical base for a real-world fuel-aware route planner.

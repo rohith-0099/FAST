@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from typing import Optional
+from typing import Literal, Optional
 
 import httpx
 from fastapi import FastAPI, HTTPException, Query
@@ -23,7 +23,7 @@ from vehicle_catalog import (
 
 OPEN_METEO_BASE = "https://api.open-meteo.com/v1/forecast"
 OSRM_BASE = "https://router.project-osrm.org/route/v1/driving"
-DEFAULT_FUEL_PRICE_PER_LITRE = 105.0
+SUPPORTED_MANUAL_FUEL_TYPES = {"Petrol", "Diesel"}
 HIGHWAY_KEYWORDS = {
     "highway",
     "expressway",
@@ -50,8 +50,20 @@ class RouteRequest(BaseModel):
     source_lng: float
     dest_lat: float
     dest_lng: float
-    vehicle_id: int
-    fuel_price_per_litre: float = Field(default=DEFAULT_FUEL_PRICE_PER_LITRE, gt=0)
+    vehicle_source: Literal["official_catalog", "manual_profile"] = "official_catalog"
+    vehicle_id: Optional[int] = None
+    manual_vehicle: Optional["ManualVehicleProfile"] = None
+    fuel_price_per_litre: float = Field(gt=0)
+
+
+class ManualVehicleProfile(BaseModel):
+    vehicle_type: str = Field(min_length=1, max_length=80)
+    vehicle_label: str = Field(min_length=1, max_length=160)
+    fuel_type: str = Field(min_length=1, max_length=40)
+    combined_kmpl: float = Field(gt=0)
+    city_kmpl: Optional[float] = Field(default=None, gt=0)
+    highway_kmpl: Optional[float] = Field(default=None, gt=0)
+    source_note: Optional[str] = Field(default="", max_length=240)
 
 
 class TripSave(BaseModel):
@@ -78,6 +90,8 @@ class TripSave(BaseModel):
     fuel_price_per_litre: Optional[float] = None
     estimated_cost: Optional[float] = None
     estimation_method: Optional[str] = ""
+    vehicle_data_source: Optional[str] = ""
+    source_note: Optional[str] = ""
 
 
 @asynccontextmanager
@@ -150,6 +164,58 @@ def _estimate_stops_per_km(steps: list[dict], distance_km: float) -> float:
     return round(num_manoeuvres / distance_km, 4)
 
 
+def _normalize_manual_vehicle(profile: ManualVehicleProfile) -> dict:
+    combined_kmpl = round(profile.combined_kmpl, 2)
+    city_kmpl = round(profile.city_kmpl or combined_kmpl, 2)
+    highway_kmpl = round(profile.highway_kmpl or combined_kmpl, 2)
+
+    if profile.fuel_type not in SUPPORTED_MANUAL_FUEL_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "Manual vehicle profiles currently support litre-based fuels only: "
+                "Petrol and Diesel."
+            ),
+        )
+
+    return {
+        "id": None,
+        "year": None,
+        "make": "Manual Profile",
+        "model": profile.vehicle_label,
+        "label": profile.vehicle_label,
+        "fuel_type": profile.fuel_type,
+        "transmission": "",
+        "drive": "",
+        "vehicle_class": profile.vehicle_type,
+        "displacement_l": None,
+        "cylinders": None,
+        "city_kmpl": city_kmpl,
+        "highway_kmpl": highway_kmpl,
+        "combined_kmpl": combined_kmpl,
+        "data_source": "manual_profile",
+        "data_source_note": profile.source_note or "User-provided real vehicle mileage",
+    }
+
+
+def _resolve_vehicle(req: RouteRequest) -> dict:
+    if req.vehicle_source == "official_catalog":
+        if req.vehicle_id is None:
+            raise HTTPException(status_code=400, detail="vehicle_id is required for official catalog vehicles")
+        vehicle = get_vehicle(req.vehicle_id)
+        if vehicle is None:
+            raise HTTPException(status_code=404, detail="Selected vehicle was not found in the official dataset")
+        return {
+            **vehicle,
+            "data_source": "official_catalog",
+            "data_source_note": "Free official EPA fuel-economy catalog",
+        }
+
+    if req.manual_vehicle is None:
+        raise HTTPException(status_code=400, detail="manual_vehicle is required for manual vehicle profiles")
+    return _normalize_manual_vehicle(req.manual_vehicle)
+
+
 async def _fetch_routes(client: httpx.AsyncClient, req: RouteRequest) -> dict:
     url = (
         f"{OSRM_BASE}/{req.source_lng},{req.source_lat}"
@@ -181,13 +247,19 @@ async def _fetch_weather(client: httpx.AsyncClient, lat: float, lng: float) -> d
         if resp.status_code == 200:
             current = resp.json().get("current", {})
             return {
-                "temperature_c": current.get("temperature_2m", 25.0),
-                "wind_speed_kmh": current.get("wind_speed_10m", 10.0),
-                "precipitation_mm": current.get("precipitation", 0.0),
+                "temperature_c": current.get("temperature_2m"),
+                "wind_speed_kmh": current.get("wind_speed_10m"),
+                "precipitation_mm": current.get("precipitation"),
+                "available": True,
             }
     except Exception:
         pass
-    return {"temperature_c": 25.0, "wind_speed_kmh": 10.0, "precipitation_mm": 0.0}
+    return {
+        "temperature_c": None,
+        "wind_speed_kmh": None,
+        "precipitation_mm": None,
+        "available": False,
+    }
 
 
 @app.get("/api/vehicles/years")
@@ -216,9 +288,7 @@ async def vehicle_options(
 
 @app.post("/api/routes")
 async def get_routes(req: RouteRequest):
-    vehicle = get_vehicle(req.vehicle_id)
-    if vehicle is None:
-        raise HTTPException(status_code=404, detail="Selected vehicle was not found in the official dataset")
+    vehicle = _resolve_vehicle(req)
 
     async with httpx.AsyncClient() as client:
         osrm_data = await _fetch_routes(client, req)
@@ -309,5 +379,5 @@ async def health():
     return {
         "status": "ok",
         "catalog": catalog_summary(),
-        "estimation": "official vehicle dataset + transparent route adjustments",
+        "estimation": "official catalog or manual real vehicle profile + transparent route adjustments",
     }

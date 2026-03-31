@@ -30,25 +30,47 @@ function getRouteBadge(route) {
 function WeatherCard({ weather }) {
   if (!weather) return null;
 
+  const weatherAvailable =
+    weather.temperature_c !== null &&
+    weather.temperature_c !== undefined &&
+    weather.wind_speed_kmh !== null &&
+    weather.wind_speed_kmh !== undefined &&
+    weather.precipitation_mm !== null &&
+    weather.precipitation_mm !== undefined;
+
   return (
     <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100 mb-4">
       <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
         <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
         </svg>
-        Current Weather
+        Route Weather
       </h3>
+      <p className="text-xs text-gray-500 mb-3">
+        {weatherAvailable
+          ? "Live weather near the source point."
+          : "Live weather unavailable. The estimate uses neutral weather adjustment instead of invented weather values."}
+      </p>
       <div className="grid grid-cols-3 gap-3">
         <div className="text-center">
-          <p className="text-lg font-bold text-gray-900">{weather.temperature_c ?? "--"}°C</p>
+          <p className="text-lg font-bold text-gray-900">
+            {weather.temperature_c ?? "--"}
+            {weather.temperature_c !== null && weather.temperature_c !== undefined ? "°C" : ""}
+          </p>
           <p className="text-xs text-gray-500 mt-0.5">Temperature</p>
         </div>
         <div className="text-center">
-          <p className="text-lg font-bold text-gray-900">{weather.wind_speed_kmh ?? "--"} km/h</p>
+          <p className="text-lg font-bold text-gray-900">
+            {weather.wind_speed_kmh ?? "--"}
+            {weather.wind_speed_kmh !== null && weather.wind_speed_kmh !== undefined ? " km/h" : ""}
+          </p>
           <p className="text-xs text-gray-500 mt-0.5">Wind</p>
         </div>
         <div className="text-center">
-          <p className="text-lg font-bold text-gray-900">{weather.precipitation_mm ?? "0"} mm</p>
+          <p className="text-lg font-bold text-gray-900">
+            {weather.precipitation_mm ?? "--"}
+            {weather.precipitation_mm !== null && weather.precipitation_mm !== undefined ? " mm" : ""}
+          </p>
           <p className="text-xs text-gray-500 mt-0.5">Precipitation</p>
         </div>
       </div>
@@ -65,9 +87,15 @@ function VehicleCard({ vehicle, fuelPricePerLitre }) {
         <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V5a2 2 0 012-2h2a2 2 0 012 2v12m-6 0h6m-6 0H7a2 2 0 00-2 2v1h14v-1a2 2 0 00-2-2h-2" />
         </svg>
-        Official Vehicle Record
+        Vehicle Record Used
       </h3>
       <p className="text-sm text-gray-800 font-medium">{vehicle.label}</p>
+      <p className="mt-1 text-xs text-gray-500">
+        {vehicle.data_source === "manual_profile" ? "Manual real vehicle profile" : "Free official vehicle catalog"}
+      </p>
+      {vehicle.data_source_note && (
+        <p className="mt-1 text-xs text-gray-500">{vehicle.data_source_note}</p>
+      )}
       <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
         <div className="bg-white/70 rounded-lg p-2.5 border border-emerald-100">
           <p className="text-xs text-gray-500">Fuel Type</p>
@@ -131,7 +159,7 @@ export default function RouteResults({ routes, weather, vehicle, fuelPricePerLit
                 <span className="text-sm font-normal text-gray-500 ml-1">litres</span>
               </p>
               <p className="text-xl font-semibold text-emerald-600 mt-1">
-                {route.fuel_cost?.toFixed(2) ?? "--"}
+                ₹{route.fuel_cost?.toFixed(2) ?? "--"}
               </p>
               <p className="text-xs text-gray-500 mt-1">Estimated cost at your entered fuel price</p>
             </div>
