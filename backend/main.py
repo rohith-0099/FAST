@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from contextlib import asynccontextmanager
 from typing import Any, Literal, Optional
 
@@ -123,9 +124,12 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="FAST API", version="2.0.0", lifespan=lifespan)
 
+cors_origins_str = os.getenv("CORS_ORIGINS", "*")
+origins = [o.strip() for o in cors_origins_str.split(",")]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
