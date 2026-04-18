@@ -401,8 +401,15 @@ async def trip_history():
 
 @app.get("/api/health")
 async def health():
+    db_status = "ok"
+    try:
+        get_trips(limit=1)
+    except Exception as e:
+        db_status = f"error: {str(e)}"
+
     return {
         "status": "ok",
+        "database": db_status,
         "catalog": catalog_summary(),
         "estimation": "official catalog or manual real vehicle profile + transparent route adjustments",
     }
