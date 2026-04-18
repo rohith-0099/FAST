@@ -6,11 +6,7 @@ import axios from "axios";
 import RouteForm from "@/components/RouteForm";
 import RouteResults from "@/components/RouteResults";
 import TripHistory from "@/components/TripHistory";
-import Sidebar from "@/components/Sidebar";
-import { Map as MapIcon, BarChart3 } from "lucide-react";
-import { API_BASE } from "@/lib/api";
-
-const Map = dynamic(() => import("@/components/Map"), { ssr: false });
+import LoadingOverlay from "@/components/LoadingOverlay";
 
 export default function Home() {
   const [source, setSource] = useState(null);
@@ -132,6 +128,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-bg-primary flex">
+      {loading && <LoadingOverlay />}
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
