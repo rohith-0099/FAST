@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS trip_history (
     combined_kmpl         REAL,
     fuel_price_per_litre  REAL,
     estimated_cost        REAL,
+    co2_kg                REAL,
     estimation_method     TEXT,
     vehicle_data_source   TEXT,
     source_note           TEXT,
@@ -94,7 +95,7 @@ def save_trip(data: dict) -> int:
                 vehicle_id, vehicle_label, vehicle_year, vehicle_make,
                 vehicle_model, fuel_type, city_kmpl, highway_kmpl,
                 combined_kmpl, fuel_price_per_litre, estimated_cost,
-                estimation_method, vehicle_data_source, source_note
+                co2_kg, estimation_method, vehicle_data_source, source_note
             ) VALUES (
                 :source_name, :dest_name, :source_lat, :source_lng,
                 :dest_lat, :dest_lng, :vehicle_type, :mileage,
@@ -102,7 +103,7 @@ def save_trip(data: dict) -> int:
                 :vehicle_id, :vehicle_label, :vehicle_year, :vehicle_make,
                 :vehicle_model, :fuel_type, :city_kmpl, :highway_kmpl,
                 :combined_kmpl, :fuel_price_per_litre, :estimated_cost,
-                :estimation_method, :vehicle_data_source, :source_note
+                :co2_kg, :estimation_method, :vehicle_data_source, :source_note
             )
             """,
             {
@@ -128,6 +129,7 @@ def save_trip(data: dict) -> int:
                 "combined_kmpl": data.get("combined_kmpl"),
                 "fuel_price_per_litre": data.get("fuel_price_per_litre"),
                 "estimated_cost": data.get("estimated_cost"),
+                "co2_kg": data.get("co2_kg"),
                 "estimation_method": data.get("estimation_method", ""),
                 "vehicle_data_source": data.get("vehicle_data_source", ""),
                 "source_note": data.get("source_note", ""),
