@@ -91,6 +91,11 @@ def estimate_route_fuel(
     road_profile: dict[str, float],
     fuel_price_per_litre: float,
 ) -> dict[str, float | str]:
+    distance_km = max(0.0, float(distance_km))
+    avg_speed_kmh = max(0.1, float(avg_speed_kmh))
+    stops_per_km = max(0.0, float(stops_per_km))
+    fuel_price_per_litre = max(0.01, float(fuel_price_per_litre))
+
     base_l_per_100km = _blend_base_consumption(vehicle, road_profile)
 
     factors = {
