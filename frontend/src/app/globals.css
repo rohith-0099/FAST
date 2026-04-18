@@ -213,9 +213,40 @@ button {
 }
 
 /* Utility classes */
+.glass {
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-premium);
+}
+
+.glass-hover {
+  transition: all 0.3s ease;
+}
+
+.glass-hover:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--accent-primary);
+  transform: translateY(-2px);
+}
+
 .text-gradient {
-  background: linear-gradient(135deg, var(--accent-green), var(--accent-blue));
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-secondary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+.glow {
+  box-shadow: var(--shadow-glow);
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
