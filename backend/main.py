@@ -51,6 +51,10 @@ class Waypoint(BaseModel):
     lng: float
 
 
+class CompareRequest(BaseModel):
+    vehicle_ids: list[int]
+
+
 class RouteRequest(BaseModel):
     source_lat: float
     source_lng: float
@@ -311,6 +315,25 @@ async def vehicle_options(
     model: str = Query(...),
 ):
     return {"vehicles": list_vehicle_options(year, make, model)}
+
+
+@app.post("/api/compare_vehicles")
+async def compare_vehicles_endpoint(req: CompareRequest) -> dict[str, Any]:
+    """
+    Fetch comprehensive profile data for a set of specific vehicles to enable direct comparison comparisons.
+    """
+    if not req.vehicle_ids:
+        raise HTTPException(status_code=400, detail="Require at least one vehicle_id for comparison.")
+    if len(req.vehicle_ids) > 10:
+        raise HTTPException(status_code=400, detail="Cannot compare more than 10 vehicles at once.")
+        
+    results = []
+    for vid in req.vehicle_ids:
+        vehicle = get_vehicle(vid)
+        if vehicle:
+            results.append(vehicle)
+            
+    return {"comparison": results}
 
 
 @app.post("/api/routes", response_model=RouteResponse)
