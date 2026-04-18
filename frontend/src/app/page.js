@@ -129,7 +129,6 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-bg-primary flex">
-      {loading && <LoadingOverlay />}
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
@@ -165,8 +164,9 @@ export default function Home() {
                   onSetDestination={setDestination}
                 />
                 
-                {routes && (
+                {(loading || routes) && (
                   <RouteResults
+                    loading={loading}
                     routes={routes}
                     weather={weather}
                     vehicle={vehicle}

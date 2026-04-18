@@ -94,7 +94,21 @@ function VehicleCard({ vehicle, fuelPricePerLitre }) {
   );
 }
 
-export default function RouteResults({ routes, weather, vehicle, fuelPricePerLitre, onSaveTrip }) {
+export default function RouteResults({ routes, weather, vehicle, fuelPricePerLitre, onSaveTrip, loading }) {
+  if (loading) {
+    return (
+      <div className="space-y-4 animate-pulse">
+        <div className="glass rounded-2xl h-32 border border-glass"></div>
+        <div className="glass rounded-2xl h-24 border border-glass"></div>
+        <div className="flex items-center justify-between px-1 my-2">
+          <div className="h-4 w-32 bg-white/10 rounded"></div>
+          <div className="h-4 w-16 bg-white/10 rounded"></div>
+        </div>
+        <div className="card !p-5 border-glass h-64"></div>
+      </div>
+    );
+  }
+
   if (!routes || routes.length === 0) return null;
 
   return (
