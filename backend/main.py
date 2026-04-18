@@ -89,6 +89,7 @@ class TripSave(BaseModel):
     combined_kmpl: Optional[float] = None
     fuel_price_per_litre: Optional[float] = None
     estimated_cost: Optional[float] = None
+    co2_kg: Optional[float] = None
     estimation_method: Optional[str] = ""
     vehicle_data_source: Optional[str] = ""
     source_note: Optional[str] = ""
