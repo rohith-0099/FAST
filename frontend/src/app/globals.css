@@ -22,8 +22,8 @@
   
   /* Text Tokens */
   --text-main: #f8fafc; /* Slate 50 */
-  --text-dim: #94a3b8; /* Slate 400 */
-  --text-muted: #64748b; /* Slate 500 */
+  --text-dim: #d4d4d8; /* Zinc 300 - High Contrast */
+  --text-muted: #a1a1aa; /* Zinc 400 - Medium Contrast */
   
   /* Border & Glass */
   --border-glass: rgba(255, 255, 255, 0.1);
