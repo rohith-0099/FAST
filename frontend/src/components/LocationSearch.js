@@ -111,7 +111,8 @@ export default function LocationSearch({
         {query && (
           <button
             onClick={handleClear}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-dim hover:text-main transition-colors p-1"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-dim hover:text-main hover:bg-white/10 rounded-full transition-all p-1.5"
+            title="Clear search"
           >
             <X size={16} />
           </button>
