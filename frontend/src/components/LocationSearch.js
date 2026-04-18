@@ -1,11 +1,11 @@
-"use client";
+import { 
+  MapPin, 
+  Search, 
+  X, 
+  Loader2, 
+  Navigation 
+} from 'lucide-react';
 
-import { useState, useEffect, useRef } from "react";
-
-/**
- * LocationSearch component with autocomplete using Nominatim (OpenStreetMap)
- * Free, open-source alternative to Google Maps Geocoding
- */
 export default function LocationSearch({
   label,
   placeholder,
@@ -19,21 +19,26 @@ export default function LocationSearch({
   const [showSuggestions, setShowSuggestions] = useState(false);
   const wrapperRef = useRef(null);
 
-  // Debounce search to avoid excessive API calls
+  // Sync with existing location
+  useEffect(() => {
+    if (existingLocation && !query) {
+      setQuery(existingLocation.displayName);
+    }
+  }, [existingLocation]);
+
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (query.trim().length >= 3) {
+      if (query.trim().length >= 3 && query !== existingLocation?.displayName) {
         fetchSuggestions(query);
       } else {
         setSuggestions([]);
         setShowSuggestions(false);
       }
-    }, 300);
+    }, 400);
 
     return () => clearTimeout(timer);
   }, [query]);
 
-  // Close suggestions when clicking outside
   useEffect(() => {
     function handleClickOutside(event) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
@@ -56,7 +61,6 @@ export default function LocationSearch({
       setSuggestions(data);
       setShowSuggestions(true);
     } catch (error) {
-      console.error("Error fetching suggestions:", error);
       setSuggestions([]);
     } finally {
       setLoading(false);
@@ -82,37 +86,17 @@ export default function LocationSearch({
     onLocationSelect(null);
   };
 
-  const getIconColor = () => {
-    if (existingLocation) return iconColor;
-    return "text-gray-400";
-  };
-
   return (
     <div className="relative" ref={wrapperRef}>
-      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+      <label className="block text-[10px] font-black text-muted uppercase tracking-widest mb-1.5 ml-1">
         {label}
       </label>
-      <div className="relative">
-        <div className="absolute left-3 top-1/2 -translate-y-1/2">
-          <svg
-            className={`w-4 h-4 ${getIconColor()}`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-            />
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-            />
-          </svg>
+      <div className="relative group/input">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 z-10">
+          <MapPin 
+            className={`${existingLocation ? iconColor : 'text-dim'} group-focus-within/input:text-accent-primary transition-colors`} 
+            size={18} 
+          />
         </div>
 
         <input
@@ -121,74 +105,45 @@ export default function LocationSearch({
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => query.trim().length >= 3 && setShowSuggestions(true)}
           placeholder={placeholder}
-          className="w-full bg-white border border-gray-300 rounded-lg pl-10 pr-10 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+          className="w-full glass border border-glass rounded-2xl pl-12 pr-10 py-3 text-xs text-main placeholder-dim focus:outline-none focus:border-accent-primary/40 focus:bg-white/10 transition-all font-medium"
         />
 
         {query && (
           <button
             onClick={handleClear}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-dim hover:text-main transition-colors p-1"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <X size={16} />
           </button>
         )}
       </div>
 
-      {/* Suggestions dropdown */}
       {showSuggestions && (suggestions.length > 0 || loading) && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+        <div className="absolute z-[100] w-full mt-2 glass border border-glass rounded-2xl shadow-premium max-h-64 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
           {loading ? (
-            <div className="px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
-              <span className="spinner-sm"></span>
-              Searching...
+            <div className="px-5 py-4 text-xs text-dim flex items-center gap-3">
+              <Loader2 className="animate-spin text-accent-primary" size={16} />
+              Searching global registry...
             </div>
           ) : (
             suggestions.map((suggestion, index) => (
               <button
                 key={index}
                 onClick={() => handleSelect(suggestion)}
-                className="w-full px-4 py-3 text-left text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
+                className="w-full px-5 py-4 text-left text-xs text-main hover:bg-white/5 transition-colors border-b border-white/5 last:border-b-0 group/item flex items-start gap-4"
               >
-                <div className="flex items-start gap-3">
-                  <svg
-                    className={`w-4 h-4 mt-0.5 flex-shrink-0 ${iconColor}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-gray-900 truncate">{suggestion.name}</p>
-                    {suggestion.display_name !== suggestion.name && (
-                      <p className="text-xs text-gray-500 truncate mt-0.5">
-                        {suggestion.display_name}
-                      </p>
-                    )}
-                  </div>
+                <Navigation className="text-dim group-hover/item:text-accent-primary transition-colors mt-0.5 mt-0.5 flex-shrink-0" size={14} />
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-main truncate group-hover/item:text-accent-primary transition-colors">
+                    {suggestion.name || suggestion.display_name.split(',')[0]}
+                  </p>
+                  <p className="text-[10px] text-dim truncate mt-0.5">
+                    {suggestion.display_name}
+                  </p>
                 </div>
               </button>
             ))
           )}
-        </div>
-      )}
-
-      {showSuggestions && suggestions.length === 0 && query.trim().length >= 3 && !loading && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg px-4 py-3 text-sm text-gray-500">
-          No locations found. Try a different search term.
         </div>
       )}
     </div>
