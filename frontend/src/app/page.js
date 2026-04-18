@@ -19,6 +19,14 @@ export default function Home() {
   const [fuelPricePerLitre, setFuelPricePerLitre] = useState(null);
   const [loading, setLoading] = useState(false);
   const [refreshHistory, setRefreshHistory] = useState(0);
+  const [activeTab, setActiveTab] = useState("plan");
+  const [theme, setTheme] = useState("dark");
+
+  const toggleTheme = useCallback(() => {
+    const newTheme = theme === "dark" ? "light" : "dark";
+    setTheme(newTheme);
+    document.documentElement.setAttribute("data-theme", newTheme);
+  }, [theme]);
 
   const handleFindRoutes = useCallback(
     async ({ vehicleSource, vehicleId, fuelPricePerLitre: enteredFuelPrice, manualVehicle }) => {
