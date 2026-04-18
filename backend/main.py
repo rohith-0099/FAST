@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import logging
 import os
+import time
 from contextlib import asynccontextmanager
 from typing import Any, Literal, Optional
 
@@ -134,6 +136,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    logger.info(f"{request.method} {request.url.path} completed in {process_time:.4f}s with status {response.status_code}")
+    return response
+
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
