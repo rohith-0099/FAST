@@ -224,11 +224,15 @@ def _resolve_vehicle(req: RouteRequest) -> dict:
 
 
 async def _fetch_routes(client: httpx.AsyncClient, req: RouteRequest) -> dict:
-    url = (
-        f"{OSRM_BASE}/{req.source_lng},{req.source_lat}"
-        f";{req.dest_lng},{req.dest_lat}"
-        f"?overview=full&geometries=geojson&alternatives=3&steps=true"
-    )
+    coords = [f"{req.source_lng},{req.source_lat}"]
+    if req.waypoints:
+        for wp in req.waypoints:
+            coords.append(f"{wp.lng},{wp.lat}")
+    coords.append(f"{req.dest_lng},{req.dest_lat}")
+
+    coord_str = ";".join(coords)
+    url = f"{OSRM_BASE}/{coord_str}?overview=full&geometries=geojson&alternatives=3&steps=true"
+
     resp = await client.get(url, timeout=15.0)
     if resp.status_code != 200:
         raise HTTPException(
