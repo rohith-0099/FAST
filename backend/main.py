@@ -45,11 +45,17 @@ URBAN_KEYWORDS = {
 }
 
 
+class Waypoint(BaseModel):
+    lat: float
+    lng: float
+
+
 class RouteRequest(BaseModel):
     source_lat: float
     source_lng: float
     dest_lat: float
     dest_lng: float
+    waypoints: Optional[list[Waypoint]] = Field(default_factory=list)
     vehicle_source: Literal["official_catalog", "manual_profile"] = "official_catalog"
     vehicle_id: Optional[int] = None
     manual_vehicle: Optional["ManualVehicleProfile"] = None
