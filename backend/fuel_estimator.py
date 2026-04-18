@@ -4,6 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
+CO2_GRAMS_PER_LITRE = {
+    "Petrol": 2310,  # ~2.31 kg/L
+    "Diesel": 2680,  # ~2.68 kg/L
+}
+
 
 def _clamp(value: float, lower: float, upper: float) -> float:
     return max(lower, min(upper, value))
