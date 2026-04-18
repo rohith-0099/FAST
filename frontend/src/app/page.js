@@ -20,6 +20,12 @@ export default function Home() {
   const [refreshHistory, setRefreshHistory] = useState(0);
   const [activeTab, setActiveTab] = useState("plan");
   const [theme, setTheme] = useState("dark");
+  const [toast, setToast] = useState(null);
+
+  const showToast = useCallback((message, type = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3000);
+  }, []);
 
   useEffect(() => {
     const savedTheme = window.localStorage.getItem("fast:theme") || "dark";
@@ -65,9 +71,9 @@ export default function Home() {
         setFuelPricePerLitre(res.data.fuel_price_per_litre ?? enteredFuelPrice);
       } catch (err) {
         console.error("Error fetching routes:", err);
-        alert(
-          err.response?.data?.detail ||
-            "Failed to fetch routes. Ensure the backend is online."
+        showToast(
+          err.response?.data?.detail || "Failed to fetch routes. Ensure backend is online.",
+          "error"
         );
       } finally {
         setLoading(false);
@@ -109,10 +115,10 @@ export default function Home() {
           source_note: vehicle.data_source_note || "",
         });
         setRefreshHistory((prev) => prev + 1);
-        alert("Trip saved successfully!");
+        showToast("Trip saved successfully!", "success");
       } catch (err) {
         console.error("Error saving trip:", err);
-        alert("Failed to save trip.");
+        showToast("Failed to save trip.", "error");
       }
     },
     [destination, fuelPricePerLitre, source, vehicle]
@@ -129,6 +135,13 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-bg-primary flex">
+      {toast && (
+        <div className={`fixed top-4 right-4 z-[9999] px-6 py-3 rounded-2xl shadow-premium border backdrop-blur-md animate-in slide-in-from-top-4 duration-300 font-bold ${
+          toast.type === 'success' ? 'bg-accent-primary/20 text-accent-primary border-accent-primary/50' : 'bg-status-error/20 text-status-error border-status-error/50'
+        }`}>
+          {toast.message}
+        </div>
+      )}
       <Sidebar 
         activeTab={activeTab} 
         setActiveTab={setActiveTab} 
