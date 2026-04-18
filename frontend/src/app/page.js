@@ -7,6 +7,7 @@ import RouteForm from "@/components/RouteForm";
 import RouteResults from "@/components/RouteResults";
 import TripHistory from "@/components/TripHistory";
 import LoadingOverlay from "@/components/LoadingOverlay";
+import VehicleComparison from "@/components/VehicleComparison";
 
 export default function Home() {
   const [source, setSource] = useState(null);
@@ -224,19 +225,8 @@ export default function Home() {
         )}
 
         {activeTab === 'compare' && (
-          <div className="max-w-7xl mx-auto flex items-center justify-center h-[60vh]">
-            <div className="text-center glass p-12 rounded-[40px] border border-glass max-w-md">
-              <div className="w-20 h-20 bg-accent-primary/20 rounded-3xl flex items-center justify-center mx-auto mb-6">
-                <BarChart3 className="text-accent-primary" size={40} />
-              </div>
-              <h3 className="text-2xl font-bold text-main">Vehicle Comparison</h3>
-              <p className="text-dim mt-4">
-                Compare multiple vehicles side-by-side to find the most cost-effective option for your route.
-              </p>
-              <button className="mt-8 px-8 py-3 bg-accent-primary text-slate-900 font-bold rounded-2xl glow hover:opacity-90 transition-all">
-                COMING SOON
-              </button>
-            </div>
+          <div className="max-w-7xl mx-auto flex flex-col items-center justify-center pt-[5vh] animate-fade-in">
+            <VehicleComparison />
           </div>
         )}
       </main>
