@@ -380,6 +380,19 @@ async def save_trip_endpoint(trip: TripSave):
     return {"id": trip_id, "message": "Trip saved successfully"}
 
 
+@app.get("/api/fuel-trends")
+async def fuel_trends(fuel_type: str = "Petrol"):
+    # Mock trend data for the last 7 days
+    import random
+    base_price = 101.5 if fuel_type == "Petrol" else 89.2
+    days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+    trends = []
+    for day in days:
+        price = base_price + random.uniform(-2, 2)
+        trends.append({"day": day, "price": round(price, 2)})
+    return {"fuel_type": fuel_type, "trends": trends, "currency": "INR"}
+
+
 @app.get("/api/history")
 async def trip_history():
     trips = get_trips(limit=20)
