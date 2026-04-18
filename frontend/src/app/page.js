@@ -9,6 +9,9 @@ import TripHistory from "@/components/TripHistory";
 import LoadingOverlay from "@/components/LoadingOverlay";
 import VehicleComparison from "@/components/VehicleComparison";
 
+axios.defaults.timeout = 15000; // 15 seconds global timeout
+axios.defaults.headers.common['X-Client'] = 'FAST-Frontend-v2.0';
+
 export default function Home() {
   const [source, setSource] = useState(null);
   const [destination, setDestination] = useState(null);
