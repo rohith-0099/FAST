@@ -402,8 +402,8 @@ async def fuel_trends(fuel_type: str = "Petrol"):
 
 
 @app.get("/api/history")
-async def trip_history():
-    trips = get_trips(limit=20)
+async def trip_history(skip: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100)):
+    trips = get_trips(limit=limit, skip=skip)
     return {"trips": trips}
 
 

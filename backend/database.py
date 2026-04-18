@@ -142,12 +142,12 @@ def save_trip(data: dict) -> int:
 
 
 
-def get_trips(limit: int = 20) -> list[dict]:
+def get_trips(limit: int = 20, skip: int = 0) -> list[dict]:
     conn = _get_connection()
     try:
         rows = conn.execute(
-            "SELECT * FROM trip_history ORDER BY created_at DESC LIMIT ?",
-            (limit,),
+            "SELECT * FROM trip_history ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (limit, skip),
         ).fetchall()
         return [dict(row) for row in rows]
     finally:
