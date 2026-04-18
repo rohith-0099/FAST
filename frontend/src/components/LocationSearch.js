@@ -87,7 +87,7 @@ export default function LocationSearch({
   };
 
   return (
-    <div className="relative" ref={wrapperRef}>
+    <div className="relative" ref={wrapperRef} role="combobox" aria-expanded={showSuggestions} aria-haspopup="listbox">
       <label className="block text-[10px] font-black text-muted uppercase tracking-widest mb-1.5 ml-1">
         {label}
       </label>
@@ -113,6 +113,7 @@ export default function LocationSearch({
             onClick={handleClear}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-dim hover:text-main hover:bg-white/10 rounded-full transition-all p-1.5"
             title="Clear search"
+            aria-label="Clear location search input"
           >
             <X size={16} />
           </button>
@@ -130,6 +131,8 @@ export default function LocationSearch({
             suggestions.map((suggestion, index) => (
               <button
                 key={index}
+                role="option"
+                aria-selected="false"
                 onClick={() => handleSelect(suggestion)}
                 className="w-full px-5 py-4 text-left text-xs text-main hover:bg-white/5 transition-colors border-b border-white/5 last:border-b-0 group/item flex items-start gap-4"
               >

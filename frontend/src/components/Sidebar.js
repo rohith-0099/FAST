@@ -35,6 +35,9 @@ export default function Sidebar({ activeTab, setActiveTab, theme, toggleTheme })
           <button
             key={item.id}
             onClick={() => setActiveTab(item.id)}
+            role="tab"
+            aria-selected={activeTab === item.id}
+            aria-controls={`${item.id}-panel`}
             className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
               activeTab === item.id 
                 ? 'bg-accent-primary/10 text-accent-primary border border-accent-primary/20 glow' 
@@ -55,6 +58,9 @@ export default function Sidebar({ activeTab, setActiveTab, theme, toggleTheme })
         
         <button 
           onClick={toggleTheme}
+          aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+          role="switch"
+          aria-checked={theme === 'dark'}
           className="w-full flex items-center justify-between px-4 py-3 rounded-xl hover:bg-white/5 transition-colors text-text-dim hover:text-text-main"
         >
           <div className="flex items-center gap-3">
