@@ -9,6 +9,10 @@ CO2_GRAMS_PER_LITRE = {
     "Diesel": 2680,  # ~2.68 kg/L
 }
 
+def _calculate_co2(fuel_litres: float, fuel_type: str) -> float:
+    factor = CO2_GRAMS_PER_LITRE.get(fuel_type, 2310)  # Default to Petrol if unknown
+    return round((fuel_litres * factor) / 1000.0, 3)  # Convert to kg
+
 
 def _clamp(value: float, lower: float, upper: float) -> float:
     return max(lower, min(upper, value))
