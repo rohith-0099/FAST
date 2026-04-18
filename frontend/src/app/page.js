@@ -6,6 +6,8 @@ import axios from "axios";
 import RouteForm from "@/components/RouteForm";
 import RouteResults from "@/components/RouteResults";
 import TripHistory from "@/components/TripHistory";
+import Sidebar from "@/components/Sidebar";
+import { Map as MapIcon, BarChart3 } from "lucide-react";
 import { API_BASE } from "@/lib/api";
 
 const Map = dynamic(() => import("@/components/Map"), { ssr: false });
@@ -29,7 +31,7 @@ export default function Home() {
   }, [theme]);
 
   const handleFindRoutes = useCallback(
-    async ({ vehicleSource, vehicleId, fuelPricePerLitre: enteredFuelPrice, manualVehicle }) => {
+    async ({ vehicleSource, vehicleId, fuelPricePerLitre: enteredFuelPrice, manualVehicle, waypoints }) => {
       if (!source || !destination) return;
       setLoading(true);
       setRoutes(null);
@@ -40,6 +42,7 @@ export default function Home() {
           source_lng: source.lng,
           dest_lat: destination.lat,
           dest_lng: destination.lng,
+          waypoints: (waypoints || []).map(wp => ({ lat: wp.lat, lng: wp.lng })),
           vehicle_source: vehicleSource,
           vehicle_id: vehicleId,
           manual_vehicle: manualVehicle,
@@ -53,7 +56,7 @@ export default function Home() {
         console.error("Error fetching routes:", err);
         alert(
           err.response?.data?.detail ||
-            "Failed to fetch routes. Make sure the backend is running and the vehicle catalog is loaded."
+            "Failed to fetch routes. Ensure the backend is online."
         );
       } finally {
         setLoading(false);
