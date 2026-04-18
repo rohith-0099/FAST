@@ -1,4 +1,16 @@
-"use client";
+import { 
+  Cloud, 
+  Wind, 
+  Droplets, 
+  Truck, 
+  Fuel, 
+  Leaf, 
+  Clock, 
+  Navigation, 
+  Zap,
+  Info,
+  Save
+} from 'lucide-react';
 
 function formatTime(minutes) {
   if (!minutes) return "N/A";
@@ -8,70 +20,41 @@ function formatTime(minutes) {
   return `${mins}m`;
 }
 
-function getRouteBadge(route) {
-  if (route.is_fuel_efficient) {
-    return {
-      label: "Lowest Fuel Use",
-      className: "badge badge-green",
-    };
-  }
-  if (route.is_fastest) {
-    return {
-      label: "Fastest",
-      className: "badge badge-blue",
-    };
-  }
-  return {
-    label: "Alternative",
-    className: "badge badge-orange",
-  };
-}
-
 function WeatherCard({ weather }) {
   if (!weather) return null;
 
-  const weatherAvailable =
-    weather.temperature_c !== null &&
-    weather.temperature_c !== undefined &&
-    weather.wind_speed_kmh !== null &&
-    weather.wind_speed_kmh !== undefined &&
-    weather.precipitation_mm !== null &&
-    weather.precipitation_mm !== undefined;
+  const weatherAvailable = !!weather.available;
 
   return (
-    <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-100 mb-4">
-      <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-        <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
-        </svg>
+    <div className="glass rounded-2xl p-4 border border-glass mb-4 overflow-hidden relative group">
+      <div className="absolute -right-4 -top-4 text-accent-primary/5 group-hover:text-accent-primary/10 transition-colors">
+        <Cloud size={100} />
+      </div>
+      <h3 className="text-sm font-semibold text-main mb-3 flex items-center gap-2">
+        <Cloud className="text-status-info" size={16} />
         Route Weather
       </h3>
-      <p className="text-xs text-gray-500 mb-3">
-        {weatherAvailable
-          ? "Live weather near the source point."
-          : "Live weather unavailable. The estimate uses neutral weather adjustment instead of invented weather values."}
-      </p>
-      <div className="grid grid-cols-3 gap-3">
-        <div className="text-center">
-          <p className="text-lg font-bold text-gray-900">
+      <div className="grid grid-cols-3 gap-3 relative z-10">
+        <div className="text-center bg-white/5 rounded-xl p-2">
+          <p className="text-lg font-bold text-main">
             {weather.temperature_c ?? "--"}
-            {weather.temperature_c !== null && weather.temperature_c !== undefined ? "°C" : ""}
+            {weather.temperature_c !== null ? "°C" : ""}
           </p>
-          <p className="text-xs text-gray-500 mt-0.5">Temperature</p>
+          <p className="text-[10px] text-muted uppercase tracking-wider font-bold mt-1">Temp</p>
         </div>
-        <div className="text-center">
-          <p className="text-lg font-bold text-gray-900">
+        <div className="text-center bg-white/5 rounded-xl p-2">
+          <p className="text-lg font-bold text-main">
             {weather.wind_speed_kmh ?? "--"}
-            {weather.wind_speed_kmh !== null && weather.wind_speed_kmh !== undefined ? " km/h" : ""}
+            {weather.wind_speed_kmh !== null ? " km/h" : ""}
           </p>
-          <p className="text-xs text-gray-500 mt-0.5">Wind</p>
+          <p className="text-[10px] text-muted uppercase tracking-wider font-bold mt-1">Wind</p>
         </div>
-        <div className="text-center">
-          <p className="text-lg font-bold text-gray-900">
+        <div className="text-center bg-white/5 rounded-xl p-2">
+          <p className="text-lg font-bold text-main">
             {weather.precipitation_mm ?? "--"}
-            {weather.precipitation_mm !== null && weather.precipitation_mm !== undefined ? " mm" : ""}
+            {weather.precipitation_mm !== null ? " mm" : ""}
           </p>
-          <p className="text-xs text-gray-500 mt-0.5">Precipitation</p>
+          <p className="text-[10px] text-muted uppercase tracking-wider font-bold mt-1">Rain</p>
         </div>
       </div>
     </div>
@@ -82,36 +65,29 @@ function VehicleCard({ vehicle, fuelPricePerLitre }) {
   if (!vehicle) return null;
 
   return (
-    <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-100 mb-4">
-      <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center gap-2">
-        <svg className="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V5a2 2 0 012-2h2a2 2 0 012 2v12m-6 0h6m-6 0H7a2 2 0 00-2 2v1h14v-1a2 2 0 00-2-2h-2" />
-        </svg>
-        Vehicle Record Used
+    <div className="glass rounded-2xl p-4 border border-glass mb-4 relative overflow-hidden group">
+      <div className="absolute -right-4 -top-4 text-accent-primary/5 group-hover:text-accent-primary/10 transition-colors">
+        <Truck size={100} />
+      </div>
+      <h3 className="text-sm font-semibold text-main mb-3 flex items-center gap-2">
+        <Fuel className="text-accent-primary" size={16} />
+        Active Vehicle
       </h3>
-      <p className="text-sm text-gray-800 font-medium">{vehicle.label}</p>
-      <p className="mt-1 text-xs text-gray-500">
-        {vehicle.data_source === "manual_profile" ? "Manual real vehicle profile" : "Free official vehicle catalog"}
-      </p>
-      {vehicle.data_source_note && (
-        <p className="mt-1 text-xs text-gray-500">{vehicle.data_source_note}</p>
-      )}
-      <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
-        <div className="bg-white/70 rounded-lg p-2.5 border border-emerald-100">
-          <p className="text-xs text-gray-500">Fuel Type</p>
-          <p className="font-semibold text-gray-900">{vehicle.fuel_type}</p>
-        </div>
-        <div className="bg-white/70 rounded-lg p-2.5 border border-emerald-100">
-          <p className="text-xs text-gray-500">Fuel Price Used</p>
-          <p className="font-semibold text-gray-900">{fuelPricePerLitre?.toFixed(2) ?? "--"} / litre</p>
-        </div>
-        <div className="bg-white/70 rounded-lg p-2.5 border border-emerald-100">
-          <p className="text-xs text-gray-500">Official City</p>
-          <p className="font-semibold text-gray-900">{vehicle.city_kmpl} km/l</p>
-        </div>
-        <div className="bg-white/70 rounded-lg p-2.5 border border-emerald-100">
-          <p className="text-xs text-gray-500">Official Highway</p>
-          <p className="font-semibold text-gray-900">{vehicle.highway_kmpl} km/l</p>
+      <div className="relative z-10">
+        <p className="text-base font-bold text-main">{vehicle.label}</p>
+        <p className="text-xs text-dim mt-0.5 capitalize">
+          {vehicle.data_source.replace('_', ' ')} • {vehicle.fuel_type}
+        </p>
+        
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <div className="bg-white/5 rounded-xl p-2.5 border border-white/5">
+            <p className="text-[10px] text-muted uppercase font-bold">Fuel Price</p>
+            <p className="text-sm font-bold text-main">₹{fuelPricePerLitre?.toFixed(2)}</p>
+          </div>
+          <div className="bg-white/5 rounded-xl p-2.5 border border-white/5">
+            <p className="text-[10px] text-muted uppercase font-bold">Mileage</p>
+            <p className="text-sm font-bold text-accent-primary">{vehicle.combined_kmpl} km/l</p>
+          </div>
         </div>
       </div>
     </div>
@@ -126,98 +102,90 @@ export default function RouteResults({ routes, weather, vehicle, fuelPricePerLit
       <VehicleCard vehicle={vehicle} fuelPricePerLitre={fuelPricePerLitre} />
       <WeatherCard weather={weather} />
 
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-700">Available Routes</h3>
-        <span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-full">
-          {routes.length} routes found
+      <div className="flex items-center justify-between px-1">
+        <h3 className="text-sm font-bold text-main uppercase tracking-widest">Available Routes</h3>
+        <span className="text-[10px] font-black text-accent-primary bg-accent-primary/10 px-2 py-0.5 rounded-md border border-accent-primary/20">
+          {routes.length} OPTIONS
         </span>
       </div>
 
       {routes.map((route, idx) => {
-        const badge = getRouteBadge(route);
-
         return (
           <div
             key={idx}
-            className={`bg-white rounded-xl border-2 p-4 transition-all ${
-              route.is_fuel_efficient
-                ? "border-emerald-500 shadow-md shadow-emerald-500/10"
-                : "border-gray-200 hover:border-gray-300 hover:shadow-md"
+            className={`card !p-5 group ${
+              route.is_fuel_efficient ? "border-accent-primary/40 glow" : "border-glass"
             }`}
           >
-            <span className={`inline-block text-xs font-medium px-2.5 py-1 rounded-full mb-3 ${badge.className}`}>
-              {badge.label}
-            </span>
-
-            {route.summary && (
-              <p className="text-sm text-gray-600 mb-3 font-medium">via {route.summary}</p>
-            )}
-
-            <div className="text-center py-4 mb-4 bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl border border-emerald-100">
-              <p className="text-3xl font-bold text-gray-900">
-                {route.fuel_litres?.toFixed(2) ?? "--"}
-                <span className="text-sm font-normal text-gray-500 ml-1">litres</span>
-              </p>
-              <p className="text-xl font-semibold text-emerald-600 mt-1">
-                ₹{route.fuel_cost?.toFixed(2) ?? "--"}
-              </p>
-              <p className="text-xs text-gray-500 mt-1">Estimated cost at your entered fuel price</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 text-sm mb-3">
-              <div className="bg-gray-50 rounded-lg p-2.5">
-                <div className="flex items-center gap-1.5 text-gray-500 mb-1">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
-                  </svg>
-                  <span className="text-xs">Distance</span>
-                </div>
-                <p className="text-gray-900 font-semibold">{route.distance_km?.toFixed(1)} km</p>
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex flex-col gap-1">
+                {route.is_fuel_efficient && (
+                  <span className="badge badge-green self-start animate-pulse">
+                    <Leaf size={12} />
+                    Most Eco-Friendly
+                  </span>
+                )}
+                {route.is_fastest && !route.is_fuel_efficient && (
+                  <span className="badge badge-blue self-start">
+                    <Zap size={12} />
+                    Fastest Time
+                  </span>
+                )}
+                <p className="text-xs text-dim font-medium mt-1">via {route.summary || 'Direct Route'}</p>
               </div>
-              <div className="bg-gray-50 rounded-lg p-2.5">
-                <div className="flex items-center gap-1.5 text-gray-500 mb-1">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  <span className="text-xs">Duration</span>
-                </div>
-                <p className="text-gray-900 font-semibold">{formatTime(route.duration_min)}</p>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-2.5">
-                <div className="flex items-center gap-1.5 text-gray-500 mb-1">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                  </svg>
-                  <span className="text-xs">Road Type</span>
-                </div>
-                <p className="text-gray-900 font-semibold capitalize">{route.road_type}</p>
-              </div>
-              <div className="bg-gray-50 rounded-lg p-2.5">
-                <div className="flex items-center gap-1.5 text-gray-500 mb-1">
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  <span className="text-xs">Route Efficiency</span>
-                </div>
-                <p className="text-gray-900 font-semibold">{route.effective_kmpl?.toFixed(2)} km/l</p>
+              <div className="text-right">
+                <p className="text-2xl font-black text-main">₹{route.fuel_cost?.toFixed(0)}</p>
+                <p className="text-[10px] text-muted font-bold uppercase tracking-tighter">Est. Cost</p>
               </div>
             </div>
 
-            <div className="rounded-lg bg-gray-50 border border-gray-200 px-3 py-2 text-xs text-gray-600 mb-3">
-              {route.estimation_method}
+            <div className="grid grid-cols-2 gap-4 mb-5">
+              <div className="bg-white/5 rounded-2xl p-3 border border-white/5 text-center">
+                <p className="text-xl font-bold text-main">{route.fuel_litres?.toFixed(2)}</p>
+                <p className="text-[10px] text-muted font-bold uppercase tracking-widest">Litres</p>
+              </div>
+              <div className="bg-accent-primary/10 rounded-2xl p-3 border border-accent-primary/20 text-center relative overflow-hidden">
+                <Leaf className="absolute -right-2 -bottom-2 text-accent-primary/10" size={40} />
+                <p className="text-xl font-bold text-accent-primary">{route.co2_kg?.toFixed(2)}</p>
+                <p className="text-[10px] text-accent-primary font-bold uppercase tracking-widest">CO2 KG</p>
+              </div>
             </div>
 
-            {route.is_fuel_efficient && (
+            <div className="grid grid-cols-2 gap-y-4 gap-x-6 text-xs mb-5 px-1">
+              <div className="flex items-center gap-2">
+                <Navigation className="text-dim" size={14} />
+                <span className="text-dim">Distance:</span>
+                <span className="text-main font-bold">{route.distance_km?.toFixed(1)} km</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="text-dim" size={14} />
+                <span className="text-dim">Time:</span>
+                <span className="text-main font-bold">{formatTime(route.duration_min)}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-status-info" />
+                <span className="text-dim">Type:</span>
+                <span className="text-main font-bold capitalize">{route.road_type}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-accent-primary" />
+                <span className="text-dim">Eco:</span>
+                <span className="text-main font-bold">{route.effective_kmpl?.toFixed(1)} km/l</span>
+              </div>
+            </div>
+
+            <div className="flex gap-2">
               <button
                 onClick={() => onSaveTrip(route)}
-                className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                className="flex-1 py-3 px-4 bg-accent-primary text-slate-900 rounded-xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98] glow flex items-center justify-center gap-2"
               >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
-                </svg>
-                Save This Route
+                <Save size={16} />
+                Save Journey
               </button>
-            )}
+              <button className="w-12 h-12 glass rounded-xl flex items-center justify-center text-dim hover:text-main transition-colors border-glass">
+                <Info size={18} />
+              </button>
+            </div>
           </div>
         );
       })}
