@@ -12,33 +12,34 @@ import {
   useMap,
 } from "react-leaflet";
 
-// Fix Leaflet default icon issue in Next.js
 const sourceIcon = new L.DivIcon({
   className: "",
-  html: `<div style="
-    width: 20px; height: 20px;
-    background: #10b981;
-    border: 3px solid white;
-    border-radius: 50%;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  "></div>`,
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
+  html: `<div class="relative w-6 h-6 flex items-center justify-center">
+    <div class="absolute inset-0 bg-emerald-500 rounded-full animate-ping opacity-25"></div>
+    <div class="relative w-4 h-4 bg-emerald-500 border-2 border-slate-900 rounded-full glow"></div>
+  </div>`,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
   popupAnchor: [0, -12],
 });
 
 const destIcon = new L.DivIcon({
   className: "",
-  html: `<div style="
-    width: 20px; height: 20px;
-    background: #ef4444;
-    border: 3px solid white;
-    border-radius: 50%;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-  "></div>`,
-  iconSize: [20, 20],
-  iconAnchor: [10, 10],
+  html: `<div class="relative w-6 h-6 flex items-center justify-center">
+    <div class="absolute inset-0 bg-red-500 rounded-full animate-ping opacity-25"></div>
+    <div class="relative w-4 h-4 bg-red-500 border-2 border-slate-900 rounded-full shadow-lg"></div>
+  </div>`,
+  iconSize: [24, 24],
+  iconAnchor: [12, 12],
   popupAnchor: [0, -12],
+});
+
+const wpIcon = new L.DivIcon({
+  className: "",
+  html: `<div class="w-3 h-3 bg-slate-400 border-2 border-slate-900 rounded-full shadow-md"></div>`,
+  iconSize: [12, 12],
+  iconAnchor: [6, 6],
+  popupAnchor: [0, -6],
 });
 
 function MapClickHandler({ source, destination, onSetSource, onSetDestination }) {
