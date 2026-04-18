@@ -114,92 +114,117 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-blue-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-emerald-500/25">
-              F
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">FAST</h1>
-              <p className="text-xs text-gray-500">Fuel Aware Smart Travel</p>
-            </div>
-          </div>
-          <div className="hidden sm:flex items-center gap-2 text-sm text-gray-600">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-            Real Vehicle Data + Route-Aware Fuel Estimates
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-bg-primary flex">
+      <Sidebar 
+        activeTab={activeTab} 
+        setActiveTab={setActiveTab} 
+        theme={theme} 
+        toggleTheme={toggleTheme} 
+      />
 
-      <main className="max-w-7xl mx-auto px-4 py-6">
-        <div className="flex flex-col lg:flex-row gap-6">
-          <div className="w-full lg:w-[420px] flex-shrink-0 space-y-6">
-            <RouteForm
-              source={source}
-              dest={destination}
-              onFindRoutes={handleFindRoutes}
-              onClear={handleClear}
-              loading={loading}
-              onSetSource={setSource}
-              onSetDestination={setDestination}
-            />
-            {routes && (
-              <RouteResults
-                routes={routes}
-                weather={weather}
-                vehicle={vehicle}
-                fuelPricePerLitre={fuelPricePerLitre}
-                onSaveTrip={handleSaveTrip}
-              />
-            )}
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-              <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
-                  </svg>
-                  <span className="text-sm font-medium text-gray-700">Route Map</span>
-                </div>
-                <span className="text-xs text-gray-500">Click on map or search to set points</span>
+      <main className="flex-1 ml-64 p-8 overflow-y-auto">
+        {activeTab === 'plan' && (
+          <div className="max-w-7xl mx-auto">
+            <header className="mb-8 flex items-center justify-between">
+              <div>
+                <h2 className="text-3xl font-bold text-main tracking-tight">Trip Planner</h2>
+                <p className="text-dim mt-1">Plan your efficient journey across multi-stage routes</p>
               </div>
-              <div className="map-container">
-                <Map
+              <div className="flex items-center gap-4">
+                <div className="glass px-4 py-2 rounded-xl flex items-center gap-2 text-sm text-main">
+                  <div className="w-2 h-2 rounded-full bg-accent-primary glow" />
+                  Live Fuel Estimation
+                </div>
+              </div>
+            </header>
+
+            <div className="flex flex-col lg:flex-row gap-8">
+              <div className="w-full lg:w-[450px] flex-shrink-0 space-y-6">
+                <RouteForm
                   source={source}
-                  destination={destination}
-                  routes={routes}
+                  dest={destination}
+                  onFindRoutes={handleFindRoutes}
+                  onClear={handleClear}
+                  loading={loading}
                   onSetSource={setSource}
                   onSetDestination={setDestination}
                 />
+                
+                {routes && (
+                  <RouteResults
+                    routes={routes}
+                    weather={weather}
+                    vehicle={vehicle}
+                    fuelPricePerLitre={fuelPricePerLitre}
+                    onSaveTrip={handleSaveTrip}
+                  />
+                )}
+              </div>
+
+              <div className="flex-1 min-w-0 space-y-6">
+                <div className="glass rounded-[32px] overflow-hidden border border-glass shadow-premium relative">
+                  <div className="absolute top-4 left-4 z-[1000] glass px-4 py-2 rounded-2xl flex items-center gap-2 text-xs font-semibold text-main border border-glass">
+                    <MapIcon size={14} className="text-accent-primary" />
+                    Interactive Trip Map
+                  </div>
+                  <div className="map-container !h-[70vh] !rounded-none !border-none">
+                    <Map
+                      source={source}
+                      destination={destination}
+                      routes={routes}
+                      onSetSource={setSource}
+                      onSetDestination={setDestination}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-6 justify-center bg-white/5 py-4 px-6 rounded-2xl border border-glass">
+                  <span className="flex items-center gap-2 text-xs font-medium text-dim">
+                    <span className="w-4 h-1 bg-accent-primary rounded-full glow"></span>
+                    FUEL EFFICIENT
+                  </span>
+                  <span className="flex items-center gap-2 text-xs font-medium text-dim">
+                    <span className="w-4 h-1 bg-status-info rounded-full"></span>
+                    FASTEST
+                  </span>
+                  <span className="flex items-center gap-2 text-xs font-medium text-dim">
+                    <span className="w-4 h-1 bg-slate-500 rounded-full"></span>
+                    ALTERNATIVE
+                  </span>
+                </div>
               </div>
             </div>
+          </div>
+        )}
 
-            <div className="mt-3 flex flex-wrap items-center gap-6 text-xs text-gray-500">
-              <span className="flex items-center gap-2">
-                <span className="w-4 h-1 bg-emerald-500 rounded-full"></span>
-                Lowest Estimated Fuel Use
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="w-4 h-1 bg-blue-500 rounded-full"></span>
-                Fastest
-              </span>
-              <span className="flex items-center gap-2">
-                <span className="w-4 h-1 bg-gray-400 rounded-full"></span>
-                Alternative
-              </span>
+        {activeTab === 'history' && (
+          <div className="max-w-7xl mx-auto animate-fade-in">
+            <header className="mb-8">
+              <h2 className="text-3xl font-bold text-main tracking-tight">Travel History</h2>
+              <p className="text-dim mt-1">Review and manage your past fuel-efficient trips</p>
+            </header>
+            <div className="glass rounded-3xl p-6 border border-glass">
+              <TripHistory refreshKey={refreshHistory} />
             </div>
           </div>
-        </div>
+        )}
 
-        <div className="mt-8">
-          <TripHistory refreshKey={refreshHistory} />
-        </div>
+        {activeTab === 'compare' && (
+          <div className="max-w-7xl mx-auto flex items-center justify-center h-[60vh]">
+            <div className="text-center glass p-12 rounded-[40px] border border-glass max-w-md">
+              <div className="w-20 h-20 bg-accent-primary/20 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                <BarChart3 className="text-accent-primary" size={40} />
+              </div>
+              <h3 className="text-2xl font-bold text-main">Vehicle Comparison</h3>
+              <p className="text-dim mt-4">
+                Compare multiple vehicles side-by-side to find the most cost-effective option for your route.
+              </p>
+              <button className="mt-8 px-8 py-3 bg-accent-primary text-slate-900 font-bold rounded-2xl glow hover:opacity-90 transition-all">
+                COMING SOON
+              </button>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );
