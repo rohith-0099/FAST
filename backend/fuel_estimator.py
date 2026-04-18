@@ -109,10 +109,12 @@ def estimate_route_fuel(
     fuel_litres = round(max(distance_km, 0.0) * effective_l_per_100km / 100.0, 3)
     fuel_cost = round(fuel_litres * fuel_price_per_litre, 2)
     effective_kmpl = round(distance_km / fuel_litres, 2) if fuel_litres > 0 else 0.0
+    co2_kg = _calculate_co2(fuel_litres, vehicle.get("fuel_type", "Petrol"))
 
     return {
         "fuel_litres": fuel_litres,
         "fuel_cost": fuel_cost,
+        "co2_kg": co2_kg,
         "base_l_per_100km": round(base_l_per_100km, 2),
         "effective_l_per_100km": round(effective_l_per_100km, 2),
         "effective_kmpl": effective_kmpl,
