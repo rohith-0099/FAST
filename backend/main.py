@@ -314,7 +314,11 @@ async def vehicle_options(
 
 
 @app.post("/api/routes", response_model=RouteResponse)
-async def get_routes(req: RouteRequest):
+async def get_routes(req: RouteRequest) -> dict[str, Any]:
+    """
+    Calculate optimal routes between source and destination, including intermediate waypoints.
+    Automatically estimates fuel consumption and environmental metrics based on terrain.
+    """
     vehicle = _resolve_vehicle(req)
 
     async with httpx.AsyncClient() as client:
@@ -410,7 +414,10 @@ async def fuel_trends(fuel_type: str = "Petrol"):
 
 
 @app.get("/api/history")
-async def trip_history(skip: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100)):
+async def trip_history(skip: int = Query(0, ge=0), limit: int = Query(20, ge=1, le=100)) -> dict[str, Any]:
+    """
+    Fetch previously saved trip calculations with pagination support.
+    """
     trips = get_trips(limit=limit, skip=skip)
     return {"trips": trips}
 
