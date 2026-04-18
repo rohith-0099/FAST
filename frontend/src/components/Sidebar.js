@@ -24,10 +24,10 @@ export default function Sidebar({ activeTab, setActiveTab, theme, toggleTheme })
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 glass border-r border-glass z-50 flex flex-col">
       <div className="p-6 flex items-center gap-3">
-        <div className="bg-accent-primary p-2 rounded-xl glow">
+        <div className="bg-accent-primary p-2 rounded-xl glow flex-shrink-0">
           <Zap className="text-slate-900" size={24} fill="currentColor" />
         </div>
-        <h1 className="text-2xl font-bold text-gradient">FAST</h1>
+        <h1 className="text-2xl font-black tracking-tight text-gradient leading-none">FAST</h1>
       </div>
 
       <nav className="flex-1 px-4 space-y-2 mt-4">
