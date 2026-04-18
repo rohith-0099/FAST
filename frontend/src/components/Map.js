@@ -114,6 +114,7 @@ function formatTime(minutes) {
 export default function MapComponent({
   source,
   destination,
+  waypoints = [],
   routes,
   onSetSource,
   onSetDestination,
@@ -131,7 +132,8 @@ export default function MapComponent({
       center={center}
       zoom={zoom}
       style={{ height: "100%", width: "100%" }}
-      zoomControl={true}
+      zoomControl={false}
+      className="z-0"
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -149,38 +151,35 @@ export default function MapComponent({
 
       {source && (
         <Marker position={[source.lat, source.lng]} icon={sourceIcon}>
-          <Popup>
-            <div className="text-sm">
-              <strong className="text-emerald-600 block mb-1">Source</strong>
-              <div className="text-gray-600">
-                {source.lat.toFixed(4)}, {source.lng.toFixed(4)}
-              </div>
-              {source.displayName && (
-                <div className="text-gray-500 text-xs mt-1 truncate max-w-[200px]">
-                  {source.displayName}
-                </div>
-              )}
+          <Popup className="premium-popup">
+            <div className="p-2">
+              <p className="text-[10px] font-black text-accent-primary uppercase tracking-widest mb-1">Origin</p>
+              <p className="text-xs font-bold text-slate-800">{source.displayName || 'Selected Point'}</p>
             </div>
           </Popup>
         </Marker>
       )}
+
+      {waypoints.map((wp, idx) => wp && (
+        <Marker key={idx} position={[wp.lat, wp.lng]} icon={wpIcon}>
+          <Popup className="premium-popup">
+            <div className="p-2">
+              <p className="text-[10px] font-black text-status-info uppercase tracking-widest mb-1">Stop {idx + 1}</p>
+              <p className="text-xs font-bold text-slate-800">{wp.displayName || 'Waystop'}</p>
+            </div>
+          </Popup>
+        </Marker>
+      ))}
 
       {destination && (
         <Marker
           position={[destination.lat, destination.lng]}
           icon={destIcon}
         >
-          <Popup>
-            <div className="text-sm">
-              <strong className="text-red-600 block mb-1">Destination</strong>
-              <div className="text-gray-600">
-                {destination.lat.toFixed(4)}, {destination.lng.toFixed(4)}
-              </div>
-              {destination.displayName && (
-                <div className="text-gray-500 text-xs mt-1 truncate max-w-[200px]">
-                  {destination.displayName}
-                </div>
-              )}
+          <Popup className="premium-popup">
+            <div className="p-2">
+              <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1">Destination</p>
+              <p className="text-xs font-bold text-slate-800">{destination.displayName || 'Target'}</p>
             </div>
           </Popup>
         </Marker>
