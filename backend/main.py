@@ -319,7 +319,8 @@ async def get_routes(req: RouteRequest):
         for leg in route.get("legs", []):
             all_steps.extend(leg.get("steps", []))
 
-        summary = route.get("legs", [{}])[0].get("summary", "") if route.get("legs") else ""
+        summaries = [leg.get("summary", "") for leg in route.get("legs", []) if leg.get("summary")]
+        summary = " via ".join(summaries) if summaries else route.get("legs", [{}])[0].get("summary", "")
         road_profile = _road_profile(all_steps)
         stops_per_km = _estimate_stops_per_km(all_steps, distance_km)
 
