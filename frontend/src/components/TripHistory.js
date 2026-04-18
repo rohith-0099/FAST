@@ -15,13 +15,21 @@ export default function TripHistory({ refreshKey }) {
   const [trips, setTrips] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
 
   useEffect(() => {
     async function fetchHistory() {
       setLoading(true);
       try {
-        const res = await axios.get(`${API_BASE}/api/history`);
-        setTrips(Array.isArray(res.data?.trips) ? res.data.trips : []);
+        const res = await axios.get(`${API_BASE}/api/history?skip=${page * 20}&limit=20`);
+        const fetchedTrips = Array.isArray(res.data?.trips) ? res.data.trips : [];
+        if (page === 0) {
+          setTrips(fetchedTrips);
+        } else {
+          setTrips(prev => [...prev, ...fetchedTrips]);
+        }
+        setHasMore(fetchedTrips.length === 20);
       } catch (err) {
         console.error("Error fetching history:", err);
       } finally {
@@ -30,7 +38,7 @@ export default function TripHistory({ refreshKey }) {
     }
 
     fetchHistory();
-  }, [refreshKey]);
+  }, [refreshKey, page]);
 
   const filteredTrips = trips.filter(trip => 
     trip.vehicle_label?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -138,6 +146,19 @@ export default function TripHistory({ refreshKey }) {
           </div>
         )}
       </div>
+
+      {trips.length > 0 && hasMore && !searchTerm && (
+        <div className="flex justify-center pt-4">
+          <button 
+            onClick={() => setPage(p => p + 1)}
+            disabled={loading}
+            className="flex items-center gap-2 px-6 py-3 rounded-full bg-glass border border-glass text-main font-bold hover:bg-white/10 transition-all font-medium disabled:opacity-50"
+          >
+            {loading ? <div className="w-4 h-4 border-2 border-accent-primary/20 border-t-accent-primary rounded-full animate-spin" /> : <ChevronDown size={18} />}
+            {loading ? "Loading..." : "Load Older Journeys"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
