@@ -64,12 +64,14 @@ export default function TripHistory({ refreshKey }) {
           </div>
         ) : filteredTrips.length === 0 ? (
           <div className="text-center py-20">
-            <div className="w-20 h-20 bg-white/5 rounded-[32px] flex items-center justify-center mx-auto mb-6">
-              <History className="text-dim" size={40} />
+            <div className="w-20 h-20 bg-white/5 rounded-[32px] border border-glass flex items-center justify-center mx-auto mb-6 shadow-[0_0_40px_rgba(16,185,129,0.1)]">
+              {searchTerm ? <Search className="text-accent-primary" size={32} /> : <History className="text-accent-primary" size={32} />}
             </div>
-            <h3 className="text-xl font-bold text-main">No Journeys Logged</h3>
-            <p className="text-dim mt-2 max-w-xs mx-auto">
-              Start planning your first eco-friendly trip to see your savings history here.
+            <h3 className="text-xl font-black text-main">{searchTerm ? "No Matching Journeys" : "No Journeys Logged"}</h3>
+            <p className="text-dim mt-2 flex max-w-sm mx-auto text-sm leading-relaxed">
+              {searchTerm 
+                ? `We couldn't find any recorded trips matching "${searchTerm}". Please try adjusting your keywords.` 
+                : "Start planning your first eco-friendly or fast trip to monitor your environmental and financial savings here."}
             </p>
           </div>
         ) : (
