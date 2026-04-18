@@ -178,26 +178,31 @@ def _build_catalog() -> dict[str, Any]:
 
 
 
+@lru_cache(maxsize=1)
 def list_years() -> list[int]:
     return _build_catalog()["years"]
 
 
 
+@lru_cache(maxsize=128)
 def list_makes(year: int) -> list[str]:
     return _build_catalog()["makes_by_year"].get(year, [])
 
 
 
+@lru_cache(maxsize=512)
 def list_models(year: int, make: str) -> list[str]:
     return _build_catalog()["models_by_year_make"].get((year, make), [])
 
 
 
+@lru_cache(maxsize=1024)
 def list_vehicle_options(year: int, make: str, model: str) -> list[dict[str, Any]]:
     return _build_catalog()["options_by_key"].get((year, make, model), [])
 
 
 
+@lru_cache(maxsize=2048)
 def get_vehicle(vehicle_id: int) -> dict[str, Any] | None:
     return _build_catalog()["vehicles_by_id"].get(vehicle_id)
 
