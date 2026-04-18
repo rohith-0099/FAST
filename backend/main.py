@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from contextlib import asynccontextmanager
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 import httpx
 from fastapi import FastAPI, HTTPException, Query, Request
@@ -100,6 +100,14 @@ class TripSave(BaseModel):
     estimation_method: Optional[str] = ""
     vehicle_data_source: Optional[str] = ""
     source_note: Optional[str] = ""
+
+
+class RouteResponse(BaseModel):
+    routes: list[dict[str, Any]]
+    weather: dict[str, Any]
+    vehicle: dict[str, Any]
+    fuel_price_per_litre: float
+    pricing_note: str
 
 
 @asynccontextmanager
@@ -305,7 +313,7 @@ async def vehicle_options(
     return {"vehicles": list_vehicle_options(year, make, model)}
 
 
-@app.post("/api/routes")
+@app.post("/api/routes", response_model=RouteResponse)
 async def get_routes(req: RouteRequest):
     vehicle = _resolve_vehicle(req)
 
