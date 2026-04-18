@@ -14,5 +14,31 @@ This file logs all professional decisions, architectural changes, and logic upda
 2. **Design System**: Switched to a unified Emerald/Midnight theme using CSS variables for consistency.
 3. **Sidebar Navigation**: Decoupled navigation from the main page to improve UX and scalability.
 
-### Commit History (Abbreviated)
+### Commit History
 1. **Commit 1**: Initialize `memory.md` and document project overhaul strategy.
+2. **Commit 2**: Backend refactoring - Implement CO2 emission tracking logic in `fuel_estimator.py`.
+3. **Commit 3**: Database schema update - Add `co2_kg` column to `trip_history` table for environmental impact tracking.
+4. **Commit 4**: Backend API enhancement - Update `save_trip` endpoint to store CO2 data.
+5. **Commit 5**: UI/UX Foundation - Implement premium "Glassmorphism" design system in `globals.css`.
+6. **Commit 6**: Design System - Define atomic design tokens for Emerald Mint & Midnight Slate theme.
+7. **Commit 7**: Component Refactoring - Implement `Sidebar.js` with premium glassmorphism and theme toggle support.
+8. **Commit 8**: Layout Update - Integrate Sidebar and implement `activeTab` state management in `page.js`.
+9. **Commit 9**: UI Refresh - Refactor main dashboard layout with glass containers and premium typography.
+10. **Commit 10**: Navigation - Implement theme-aware active states in Sidebar links.
+11. **Commit 11**: Map Enhancement - Modernize map marker icons with animated emerald-themed components.
+12. **Commit 12**: Data Visualization - Integrate CO2 tracking display into `RouteResults.js` dashboard.
+13. **Commit 13**: Feature Polishing - Refactor `RouteResults` with Lucide icons and premium layout.
+14. **Commit 14**: History Management - Modernize `TripHistory.js` with responsive glass table and search.
+15. **Commit 15**: Feature - Implement CO2 impact tracking in Trip History view.
+16. **Commit 16**: Multi-stop Routing - Prepare backend for intermediate waypoint support.
+17. **Commit 17**: Frontend logic - Integrate waypoint state management in `RouteForm.js`.
+18. **Commit 18**: UI - Design dynamic waypoint input fields with "Add Stop" functionality.
+19. **Commit 19**: Map - Implement reactive waypoint markers on the interactive map.
+20. **Commit 20**: API - Update route fetching payload to include intermediate stop coordinates.
+21. **Commit 21**: Refactor - Standardize Lucide icon usage across all primary components.
+22. **Commit 22**: Feature - Implement premium trip history search and filtering.
+23. **Commit 23**: Refactor - Implement multi-stop routing UI and modernize RouteForm with glassmorphism.
+24. **Commit 24**: Refactor - Implement premium location search with glassmorphism and Lucide icons.
+25. **Commit 25**: Refactor - Integrate multi-stop routing payload and improve main layout premium UI.
+26. **Commit 26**: Refactor - Implement multi-stop waypoint markers and premium animated map indicators.
+27. **Commit 27**: Doc - Update `memory.md` with detailed commit logs and architectural updates.
