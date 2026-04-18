@@ -24,11 +24,25 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("plan");
   const [theme, setTheme] = useState("dark");
 
+  useEffect(() => {
+    const savedTheme = window.localStorage.getItem("fast:theme") || "dark";
+    const savedTab = window.localStorage.getItem("fast:active-tab") || "plan";
+    setTheme(savedTheme);
+    setActiveTab(savedTab);
+    document.documentElement.setAttribute("data-theme", savedTheme);
+  }, []);
+
   const toggleTheme = useCallback(() => {
     const newTheme = theme === "dark" ? "light" : "dark";
     setTheme(newTheme);
     document.documentElement.setAttribute("data-theme", newTheme);
+    window.localStorage.setItem("fast:theme", newTheme);
   }, [theme]);
+
+  const handleTabChange = useCallback((tab) => {
+    setActiveTab(tab);
+    window.localStorage.setItem("fast:active-tab", tab);
+  }, []);
 
   const handleFindRoutes = useCallback(
     async ({ vehicleSource, vehicleId, fuelPricePerLitre: enteredFuelPrice, manualVehicle, waypoints }) => {
